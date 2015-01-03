@@ -25,6 +25,7 @@
                 this.balls.push(this.create_ball(13, -1));
 
                 this.asteroids.push(this.create_asteroid(7, -14));
+                this.asteroids.push(this.create_asteroid(20, -14));
             }
             console.log(this.balls[0].body);
             console.log(this.asteroids[0].body.GetPosition());
