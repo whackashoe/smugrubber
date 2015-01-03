@@ -43,6 +43,13 @@
             return {
                 body: body,
                 radius: radius,
+                render: function() {
+                    var pos = this.body.GetPosition();
+                    ctx.beginPath();
+                    ctx.arc(pos.get_x(), pos.get_y(), this.radius, 0, 2*Math.PI);
+                    ctx.fillStyle = "rgba(30, 250, 150, 1)";
+                    ctx.fill();
+                }
             };
         },
 
@@ -75,11 +82,7 @@
                 ctx.fillStyle = 'rgb(255,255,0)';
 
                 for(var i=0; i<this.balls.length; ++i) {
-                    var pos = this.balls[i].body.GetPosition();
-                    ctx.beginPath();
-                    ctx.arc(pos.get_x(), pos.get_y(), this.balls[i].radius, 0, 2*Math.PI);
-                    ctx.fillStyle = "rgba(30, 250, 150, 1)";
-                    ctx.fill();
+                    this.balls[i].render();
                 }
 
                 
