@@ -18,22 +18,19 @@
             {
                 this.balls.push(this.create_ball());
             }
+            console.log(this.balls[0].body.GetPosition());
         },
 
-        init_debug_draw: function() {
-            //this.world.SetDebugDraw();
-            //do we want a debug draw?
-            //maybe just go straight for rendering
-        },
-        
         create_ball: function() {
+            var radius = 0.4;
+
             var bd = new Box2D.b2BodyDef();
             bd.set_type(Box2D.b2_dynamicBody);
-            bd.set_position( new Box2D.b2Vec2(0, 1) );
+            bd.set_position( new Box2D.b2Vec2(3, -1) );
 
 
             var circleShape = new Box2D.b2CircleShape();
-            circleShape.set_m_radius(0.4);
+            circleShape.set_m_radius(radius);
 
             var fd = new Box2D.b2FixtureDef();
             fd.set_shape(circleShape);
@@ -45,6 +42,7 @@
 
             return {
                 body: body,
+                radius: radius,
             };
         },
 
@@ -63,7 +61,6 @@
         step: function() {
             this.world.Step(1 / 60, 10, 10);
             this.world.ClearForces();
-            console.log(this.balls[0].body.GetPosition().get_y());
         },
 
         render: function() {
@@ -76,13 +73,20 @@
                 ctx.scale(this.PTM, this.PTM);
                 ctx.lineWidth /= this.PTM;                
                 ctx.fillStyle = 'rgb(255,255,0)';
-                this.world.DrawDebugData();
+
+                for(var i=0; i<this.balls.length; ++i) {
+                    var pos = this.balls[i].body.GetPosition();
+                    ctx.beginPath();
+                    ctx.arc(pos.get_x(), pos.get_y(), this.balls[i].radius, 0, 2*Math.PI);
+                    ctx.fillStyle = "rgba(30, 250, 150, 1)";
+                    ctx.fill();
+                }
+
                 
             ctx.restore();
         }
     };
 
-    game.init_debug_draw();
     game.init();
     setInterval(function() {
         game.step();
