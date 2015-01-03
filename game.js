@@ -295,10 +295,10 @@ Array.prototype.remove = function(from, to) {
 
         user_input: canvas.onmousedown=function(e) {
             {
-                var x = event.pageX / game.PTM;
-                var y = event.pageY / game.PTM;
-                var angle = Math.atan2(y+(canvas.height/game.PTM), x-(canvas.width / game.PTM / 2));
-                game.balls.push(game.create_ball(canvas.width/game.PTM/2, -(canvas.height/game.PTM), Math.cos(angle)*20, Math.sin(angle)*20));
+                var x = event.pageX;
+                var y = event.pageY;
+                var angle = Math.atan2((canvas.height / 2) - y, x - (canvas.width / 2));
+                game.balls.push(game.create_ball(canvas.width/game.PTM/2, -(canvas.height/game.PTM), Math.cos(angle)*25, Math.sin(angle)*25));
             }
             
 
