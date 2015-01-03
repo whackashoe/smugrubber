@@ -1,8 +1,3 @@
-function dist(x1, y1, x2, y2) {
-    var dx = x1 - x2;
-    var dy = y1 - y2;
-    return Math.sqrt(dx * dx + dy * dy);
-}
 
 // Array Remove - By John Resig (MIT Licensed)
 Array.prototype.remove = function(from, to) {
@@ -17,7 +12,15 @@ Array.prototype.remove = function(from, to) {
     canvas.width  = document.documentElement.clientWidth;
     canvas.height = document.documentElement.clientHeight;
 
-    var mouseIsDown = false;
+    function dist(x1, y1, x2, y2) {
+        var dx = x1 - x2;
+        var dy = y1 - y2;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function map(value, istart, istop, ostart, ostop) {
+        return ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
+    }
 
     var game = {
         world: new Box2D.b2World(new Box2D.b2Vec2(0, -10), false),
@@ -29,10 +32,12 @@ Array.prototype.remove = function(from, to) {
         collected_coins: 0,
         iteration: 0,
         asteroids_created: 0,
+        mouseIsDown: false,
 
         init: function() {
+            canvas.onmousedown = this.mousedown;
             for(var i=0; i<10; i++) {
-                this.asteroids.push(this.create_asteroid(i*7 + (Math.random() * 10), -10+(Math.random() * 10)));
+                this.asteroids.push(this.create_asteroid(i*7 + (Math.random() * 10), -15+(Math.random() * 20)));
             }
         },
 
@@ -50,7 +55,7 @@ Array.prototype.remove = function(from, to) {
             fd.set_shape(circleShape);
             fd.set_density(1.0);
             fd.set_friction(0.9);
-            fd.set_restitution(0.99);
+            fd.set_restitution(1.2);
 
             var body = this.world.CreateBody(bd);
             body.CreateFixture(fd);
@@ -88,7 +93,7 @@ Array.prototype.remove = function(from, to) {
         create_asteroid: function(x, y) {
             this.asteroids_created++;
             var size = 1.5 + (Math.random() * 2.5);
-            var edges = 10 + (2 * Math.floor(Math.random()*10));
+            var edges = 6 + (Math.floor(Math.random()*6));
 
             var verts = [];
             for(var i=0; i<edges; i++) {
@@ -293,23 +298,10 @@ Array.prototype.remove = function(from, to) {
             }
         },
 
-        user_input: canvas.onmousedown=function(e) {
-            {
-                var x = event.pageX;
-                var y = event.pageY;
-                var angle = Math.atan2((canvas.height / 2) - y, x - (canvas.width / 2));
-                game.balls.push(game.create_ball(canvas.width/game.PTM/2, -(canvas.height/game.PTM), Math.cos(angle)*25, Math.sin(angle)*25));
-            }
-            
-
-
-            mouseIsDown = true;
-        },
-
         render: function() {
-            ctx.fillStyle = 'rgb(20,20,20)';
+            ctx.fillStyle = 'rgba(20,20,20, 0.5)';
             ctx.fillRect( 0, 0, canvas.width, canvas.height );
-            //this.game_offset.x--;
+            this.game_offset.x--;
             
             ctx.save();            
                 ctx.translate(this.game_offset.x, this.game_offset.y);
@@ -332,6 +324,23 @@ Array.prototype.remove = function(from, to) {
 
                 
             ctx.restore();
+        },
+
+        mousedown: function(e) {
+            var x = event.pageX;
+            var y = event.pageY;
+            
+            var angle = Math.atan2((canvas.height) - y, x - (canvas.width / 2));
+            var strength = map(y, 0, canvas.height, 40, 15);
+
+            game.balls.push(game.create_ball(
+                -(game.game_offset.x / game.PTM) + (canvas.width/game.PTM/2),
+                -(canvas.height/game.PTM), 
+                Math.cos(angle)*strength,
+                Math.sin(angle)*strength)
+            );
+
+            mouseIsDown = true;
         }
     };
 
