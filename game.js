@@ -28,6 +28,7 @@ Array.prototype.remove = function(from, to) {
         coins    : [],
         collected_coins: 0,
         iteration: 0,
+        asteroids_created: 0,
 
         init: function() {
             for(var i=0; i<10; i++) {
@@ -88,6 +89,7 @@ Array.prototype.remove = function(from, to) {
         },
 
         create_asteroid: function(x, y) {
+            this.asteroids_created++;
             var size = 1.5 + (Math.random() * 2.5);
             var edges = 10 + (2 * Math.floor(Math.random()*10));
 
@@ -179,10 +181,13 @@ Array.prototype.remove = function(from, to) {
                 verts: verts,
                 render_center: render_center,
                 alive: true,
+                color: "#DC3CBF",
 
                 render: function() {
                     var pos = this.body.GetPosition();
-                    ctx.fillStyle = "rgba(30, 250, 150, 0.5)";
+                    ctx.fillStyle = this.color;
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 0.05;
                     
                     for(var i=0; i<verts.length-1; i++) {
                         ctx.beginPath();
@@ -194,6 +199,7 @@ Array.prototype.remove = function(from, to) {
                                    pos.get_y() + this.verts[i+1].get_y());
                         ctx.closePath();
                         ctx.fill();
+                        ctx.stroke();
                     }
 
                     ctx.beginPath();
@@ -214,7 +220,7 @@ Array.prototype.remove = function(from, to) {
             return {
                 x: x,
                 y: y, 
-                radius: 0.1,
+                radius: 0.2,
                 alive: true,
 
                 render: function() {
@@ -271,15 +277,22 @@ Array.prototype.remove = function(from, to) {
             }
 
             for(var i=0; i<this.coins.length; ++i) {
-                if(this.coins[i].x + canvas.width < this.game_offset.x) {
+                if(this.coins[i].x + canvas.width + canvas.width < this.game_offset.x) {
                     this.coins[i].alive = false;
                 }
             }
 
+            var destroyed_asteroids = 0;
             for(var i=0; i<this.asteroids.length; ++i) {
                 if(this.asteroids[i].body.GetPosition().get_x() + canvas.width < this.game_offset.x) {
-                    this.asteroids[i].alive = false;
+                    //this.asteroids[i].alive = false;
+                    destroyed_asteroids++;
                 }
+            }
+
+            for(var i=0; i<destroyed_asteroids; i++) {
+                console.log(this.asteroids_created);
+                this.asteroids.push(this.create_asteroid((-this.game_offset.x) - canvas.width/2 + (Math.random() * 10), -10+(Math.random() * 10)));
             }
         },
 
@@ -298,15 +311,15 @@ Array.prototype.remove = function(from, to) {
         },
 
         render: function() {
-            ctx.fillStyle = 'rgb(0,0,0)';
+            ctx.fillStyle = 'rgb(20,20,20)';
             ctx.fillRect( 0, 0, canvas.width, canvas.height );
-            this.game_offset.x-=1;
+            this.game_offset.x--;
             
             ctx.save();            
                 ctx.translate(this.game_offset.x, this.game_offset.y);
                 ctx.scale(1, -1);                
                 ctx.scale(this.PTM, this.PTM);
-                ctx.lineWidth /= this.PTM;                
+                ctx.strokeStyle = "rgb(255, 255, 255, 0.0)";
                 ctx.fillStyle = 'rgb(255,255,0)';
 
                 for(var i=0; i<this.balls.length; ++i) {
