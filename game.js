@@ -103,7 +103,7 @@
             var body = this.world.CreateBody(bd);
 
 
-            for(var i=0; i<verts.length-1; i++) {
+            for(var i=0; i<verts.length; i++) {
                 var vertices = [ 
                     new Box2D.b2Vec2( 0.0, 0.0 ), 
                     verts[i], 
