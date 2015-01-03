@@ -4,7 +4,7 @@
     canvas.width  = document.documentElement.clientWidth;
     canvas.height = document.documentElement.clientHeight;
 
-
+    var mouseIsDown = false;
 
     var game = {
         world: new Box2D.b2World(new Box2D.b2Vec2(0, -10), false),
@@ -31,13 +31,16 @@
             console.log(this.asteroids[0].body.GetPosition());
         },
 
+        create_floor: function() {
+            //Jett says we don't need a floor
+        },
+
         create_ball: function(x, y) {
             var radius = 0.4;
 
             var bd = new Box2D.b2BodyDef();
             bd.set_type(Box2D.b2_dynamicBody);
             bd.set_position( new Box2D.b2Vec2(x, y) );
-
 
             var circleShape = new Box2D.b2CircleShape();
             circleShape.set_m_radius(radius);
@@ -175,6 +178,22 @@
         step: function() {
             this.world.Step(1 / 60, 10, 10);
             this.world.ClearForces();
+
+
+        },
+
+        user_input: canvas.onmousedown=function(e) {
+            {
+                var x = event.pageX;
+                var y = event.pageY;
+                console.log("mouse at " + x + "," + y);
+                
+                game.balls.push(game.create_ball(x,y));
+            }
+            
+
+
+            mouseIsDown = true;
         },
 
         render: function() {
