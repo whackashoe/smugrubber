@@ -32,15 +32,11 @@ Array.prototype.remove = function(from, to) {
 
         init: function() {
             for(var i=0; i<10; i++) {
-                this.balls.push(this.create_ball(1+(i*2), -1));
-            }
-            
-            for(var i=0; i<10; i++) {
                 this.asteroids.push(this.create_asteroid(i*7 + (Math.random() * 10), -10+(Math.random() * 10)));
             }
         },
 
-        create_ball: function(x, y) {
+        create_ball: function(x, y, px, py) {
             var radius = 0.4;
 
             var bd = new Box2D.b2BodyDef();
@@ -58,6 +54,7 @@ Array.prototype.remove = function(from, to) {
 
             var body = this.world.CreateBody(bd);
             body.CreateFixture(fd);
+            body.SetLinearVelocity( new Box2D.b2Vec2(px, py) )
 
             var that = this;
 
@@ -298,11 +295,10 @@ Array.prototype.remove = function(from, to) {
 
         user_input: canvas.onmousedown=function(e) {
             {
-                var x = event.pageX;
-                var y = event.pageY;
-                console.log("mouse at " + x + "," + y);
-                
-                game.balls.push(game.create_ball(x,y));
+                var x = event.pageX / game.PTM;
+                var y = event.pageY / game.PTM;
+                var angle = Math.atan2(y+(canvas.height/game.PTM), x-(canvas.width / game.PTM / 2));
+                game.balls.push(game.create_ball(canvas.width/game.PTM/2, -(canvas.height/game.PTM), Math.cos(angle)*20, Math.sin(angle)*20));
             }
             
 
@@ -313,7 +309,7 @@ Array.prototype.remove = function(from, to) {
         render: function() {
             ctx.fillStyle = 'rgb(20,20,20)';
             ctx.fillRect( 0, 0, canvas.width, canvas.height );
-            this.game_offset.x--;
+            //this.game_offset.x--;
             
             ctx.save();            
                 ctx.translate(this.game_offset.x, this.game_offset.y);
