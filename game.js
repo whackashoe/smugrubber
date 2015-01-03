@@ -1,3 +1,16 @@
+function dist(x1, y1, x2, y2) {
+    var dx = x1 - x2;
+    var dy = y1 - y2;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+// Array Remove - By John Resig (MIT Licensed)
+Array.prototype.remove = function(from, to) {
+  var rest = this.slice((to || from) + 1 || this.length);
+  this.length = from < 0 ? this.length + from : from;
+  return this.push.apply(this, rest);
+};
+
 (function() {
     var canvas    = document.getElementById("canvas");
     var ctx       = canvas.getContext("2d");
@@ -13,26 +26,15 @@
         asteroids: [],
         balls    : [],
         coins    : [],
+        collected_coins: 0,
 
         init: function() {
-            {
-                this.balls.push(this.create_ball(1, -1));
-                this.balls.push(this.create_ball(3, -1));
-                this.balls.push(this.create_ball(5, -1));
-                this.balls.push(this.create_ball(7, -1));
-                this.balls.push(this.create_ball(9, -1));
-                this.balls.push(this.create_ball(11, -1));
-                this.balls.push(this.create_ball(13, -1));
-
-                this.asteroids.push(this.create_asteroid(7, -14));
-                this.asteroids.push(this.create_asteroid(20, -14));
+            for(var i=0; i<10; i++) {
+                this.balls.push(this.create_ball(1+(i*2), -1));
             }
-            console.log(this.balls[0].body);
-            console.log(this.asteroids[0].body.GetPosition());
-        },
-
-        create_floor: function() {
-            //Jett says we don't need a floor
+            
+            this.asteroids.push(this.create_asteroid(7, -14));
+            this.asteroids.push(this.create_asteroid(20, -14));
         },
 
         create_ball: function(x, y) {
@@ -54,9 +56,12 @@
             var body = this.world.CreateBody(bd);
             body.CreateFixture(fd);
 
+            var that = this;
+
             return {
                 body: body,
                 radius: radius,
+                alive: true,
 
                 render: function() {
                     var pos = this.body.GetPosition();
@@ -65,6 +70,17 @@
                     ctx.fillStyle = "rgba(30, 250, 150, 1)";
                     ctx.fill();
                     ctx.closePath();
+                },
+
+                update: function() {
+                    var pos = this.body.GetPosition();
+                    //check collisions with coins
+                    for(var i=0; i<that.coins.length; ++i) {
+                        if(dist(pos.get_x(), pos.get_y(), that.coins[i].x, that.coins[i].y) < this.radius) {
+                            that.coins[i].alive = false;
+                            that.collected_coins++;
+                        }
+                    }
                 }
             };
         },
@@ -85,6 +101,28 @@
                     ax * (size / 2 + nx) * size / 2,
                     ay *  (size / 2 + ny) * size / 2
                 ) );
+
+                
+                if(Math.random() * 100 < 15) {
+                    this.coins.push(this.create_coin(
+                        x + (ax * (size/2 + nx) * size / 1.5),
+                        y + (ay *  (size/2 + ny) * size/1.5)
+                    ));
+                }
+
+                if(Math.random() * 100 < 5) {
+                    this.coins.push(this.create_coin(
+                        x + (ax * (size/2 + nx) * size),
+                        y + (ay *  (size/2 + ny) * size)
+                    ));
+                }
+
+                if(Math.random() * 100 < 2) {
+                    this.coins.push(this.create_coin(
+                        x + (ax * (size/2 + nx) * size * 1.25),
+                        y + (ay *  (size/2 + ny) * size * 1.25)
+                    ));
+                }
             }
 
             var render_center = { x: 0, y: 0 };
@@ -138,6 +176,7 @@
                 body: body,
                 verts: verts,
                 render_center: render_center,
+                alive: true,
 
                 render: function() {
                     var pos = this.body.GetPosition();
@@ -169,9 +208,20 @@
             };
         },
         
-        create_coin: function() {
+        create_coin: function(x, y) {
             return {
+                x: x,
+                y: y, 
+                radius: 0.1,
+                alive: true,
 
+                render: function() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, 2*Math.PI);
+                    ctx.fillStyle = "#DDC126";
+                    ctx.fill();
+                    ctx.closePath();
+                }
             };
         },
 
@@ -179,7 +229,31 @@
             this.world.Step(1 / 60, 10, 10);
             this.world.ClearForces();
 
+            for(var i=0; i<this.balls.length; ++i) {
+                this.balls[i].update();
 
+                if(! this.balls[i].alive) {
+                    this.world.DestroyBody(this.balls[i].body);
+                    this.balls.remove(i);
+                }
+            }
+
+            for(var i=0; i<this.coins.length; ++i) {
+                this.coins[i].render();
+
+                if(! this.coins[i].alive) {
+                    this.coins.remove(i);
+                }
+            }
+
+            for(var i=0; i<this.asteroids.length; ++i) {
+                this.asteroids[i].render();
+
+                if(! this.asteroids[i].alive) {
+                    this.world.DestroyBody(this.asteroids[i].body);
+                    this.asteroids.remove(i);
+                }
+            }
         },
 
         user_input: canvas.onmousedown=function(e) {
@@ -209,6 +283,10 @@
 
                 for(var i=0; i<this.balls.length; ++i) {
                     this.balls[i].render();
+                }
+
+                for(var i=0; i<this.coins.length; ++i) {
+                    this.coins[i].render();
                 }
 
                 for(var i=0; i<this.asteroids.length; ++i) {
