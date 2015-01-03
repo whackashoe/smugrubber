@@ -25,7 +25,7 @@ Array.prototype.remove = function(from, to) {
     var game = {
         world: new Box2D.b2World(new Box2D.b2Vec2(0, -10), false),
         game_offset: { x: 0, y: 0 }, /* translation of game world render */
-        PTM: 32, /* pixels to meters */
+        PTM: 16, /* pixels to meters */
         asteroids: [],
         balls    : [],
         coins    : [],
@@ -37,12 +37,12 @@ Array.prototype.remove = function(from, to) {
         init: function() {
             canvas.onmousedown = this.mousedown;
             for(var i=0; i<10; i++) {
-                this.asteroids.push(this.create_asteroid(i*7 + (Math.random() * 10), -15+(Math.random() * 20)));
+                this.asteroids.push(this.create_asteroid(i*13 + (Math.random() * 10), -60+(Math.random() * 60)));
             }
         },
 
         create_ball: function(x, y, px, py) {
-            var radius = 0.4;
+            var radius = 1.4;
 
             var bd = new Box2D.b2BodyDef();
             bd.set_type(Box2D.b2_dynamicBody);
@@ -54,8 +54,8 @@ Array.prototype.remove = function(from, to) {
             var fd = new Box2D.b2FixtureDef();
             fd.set_shape(circleShape);
             fd.set_density(1.0);
-            fd.set_friction(0.9);
-            fd.set_restitution(1.2);
+            fd.set_friction(1.0);
+            fd.set_restitution(1.0);
 
             var body = this.world.CreateBody(bd);
             body.CreateFixture(fd);
@@ -81,7 +81,7 @@ Array.prototype.remove = function(from, to) {
                     var pos = this.body.GetPosition();
                     //check collisions with coins
                     for(var i=0; i<that.coins.length; ++i) {
-                        if(dist(pos.get_x(), pos.get_y(), that.coins[i].x, that.coins[i].y) < this.radius) {
+                        if(dist(pos.get_x(), pos.get_y(), that.coins[i].x, that.coins[i].y) < this.radius * 1.25) { //buffer for easiness (1.25)
                             that.coins[i].alive = false;
                             that.collected_coins++;
                         }
@@ -92,38 +92,41 @@ Array.prototype.remove = function(from, to) {
 
         create_asteroid: function(x, y) {
             this.asteroids_created++;
-            var size = 1.5 + (Math.random() * 2.5);
-            var edges = 6 + (Math.floor(Math.random()*6));
+            var size = 3.5 + (Math.random() * 2.5);
+            var edges = 15 + (Math.floor(Math.random()*10));
+            var xtoy = 0.25 + (Math.random() * 1.5);
+            var ytox = 0.25 + (Math.random() * 1.5);
 
             var verts = [];
             for(var i=0; i<edges; i++) {
-                var ax = Math.cos(Math.PI * 2 / edges * i);
-                var ay = Math.sin(Math.PI * 2 / edges * i);
+                var a = Math.PI * 2 / edges * i;
+                var ax = Math.cos(a);
+                var ay = Math.sin(a);
 
                 var nx = 0.5 + Math.abs(noise.simplex2(ax / 1.613 + (x / 13.2) + (y / 82.45), ay / 1.73  + (x / 13.2) + (y / 82.45)));
                 var ny = 0.5 + Math.abs(noise.simplex2(ay / 1.613 + (y / 13.2) + (x / 82.45), ax / 1.73  + (y / 13.2) + (x / 82.45)));
 
                 verts.push( new Box2D.b2Vec2(
-                    ax * (size / 2 + nx) * size / 2,
-                    ay *  (size / 2 + ny) * size / 2
+                    xtoy * (ax * (size / 2 + nx) * size / 2),
+                    ytox * ay *  (size / 2 + ny) * size / 2
                 ) );
 
-                
-                if(Math.random() * 100 < 15) {
+                if(a < Math.PI) {
                     this.coins.push(this.create_coin(
                         x + (ax * (size/2 + nx) * size / 1.5),
                         y + (ay *  (size/2 + ny) * size/1.5)
                     ));
+                
+
+                    if(Math.random() * 100 < 50) {
+                        this.coins.push(this.create_coin(
+                            x + (ax * (size/2 + nx) * size),
+                            y + (ay *  (size/2 + ny) * size)
+                        ));
+                    }
                 }
 
-                if(Math.random() * 100 < 5) {
-                    this.coins.push(this.create_coin(
-                        x + (ax * (size/2 + nx) * size),
-                        y + (ay *  (size/2 + ny) * size)
-                    ));
-                }
-
-                if(Math.random() * 100 < 2) {
+                if(Math.random() * 100 < 10) {
                     this.coins.push(this.create_coin(
                         x + (ax * (size/2 + nx) * size * 1.25),
                         y + (ay *  (size/2 + ny) * size * 1.25)
@@ -172,8 +175,8 @@ Array.prototype.remove = function(from, to) {
                 var fd = new Box2D.b2FixtureDef();
                 fd.set_shape(polygonShape);
                 fd.set_density(1.0);
-                fd.set_friction(0.9);
-                fd.set_restitution(0.99);
+                fd.set_friction(1.0);
+                fd.set_restitution(0.9);
                 
                 body.CreateFixture(fd);
             }
@@ -301,7 +304,7 @@ Array.prototype.remove = function(from, to) {
         render: function() {
             ctx.fillStyle = 'rgba(20,20,20, 0.5)';
             ctx.fillRect( 0, 0, canvas.width, canvas.height );
-            this.game_offset.x--;
+            //this.game_offset.x--;
             
             ctx.save();            
                 ctx.translate(this.game_offset.x, this.game_offset.y);
@@ -333,14 +336,18 @@ Array.prototype.remove = function(from, to) {
             var angle = Math.atan2((canvas.height) - y, x - (canvas.width / 2));
             var strength = map(y, 0, canvas.height, 40, 15);
 
-            game.balls.push(game.create_ball(
+            game.shoot(angle, strength);
+
+            mouseIsDown = true;
+        },
+
+        shoot: function(angle, strength) {
+            this.balls.push(game.create_ball(
                 -(game.game_offset.x / game.PTM) + (canvas.width/game.PTM/2),
                 -(canvas.height/game.PTM), 
                 Math.cos(angle)*strength,
                 Math.sin(angle)*strength)
             );
-
-            mouseIsDown = true;
         }
     };
 
