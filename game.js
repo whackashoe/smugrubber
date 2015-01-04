@@ -22,6 +22,8 @@ Array.prototype.remove = function(from, to) {
         return ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
     }
 
+    function sign(x) { return x ? x < 0 ? -1 : 1 : 0; }
+
     var game = {
         world: new Box2D.b2World(new Box2D.b2Vec2(0, -10), false),
         game_offset: { x: 0, y: 0 }, /* translation of game world render */
@@ -33,16 +35,33 @@ Array.prototype.remove = function(from, to) {
         iteration: 0,
         asteroids_created: 0,
         mouseIsDown: false,
+        ninja: null,
+        mouseangle: 0.0,
+        mousex: 0,
+        mousey: 0,
+        KEY_UP   :   1,
+        KEY_RIGHT:   2,
+        KEY_DOWN :   4,
+        KEY_LEFT :   8,
+        keyResult: 0,
 
         init: function() {
             canvas.onmousedown = this.mousedown;
+            canvas.onmousemove = this.mousemove;
+            document.oncontextmenu = this.rightclick;
+            document.onkeydown   = this.keydown;
+            document.onkeyup     = this.keyup;
+
+
             for(var i=0; i<10; i++) {
-                this.asteroids.push(this.create_asteroid(i*13 + (Math.random() * 10), -60+(Math.random() * 60)));
+                var x = i*13 + (Math.random() * 10);
+                var y = -60+(Math.random() * 60);
+                this.asteroids.push(this.create_asteroid(x, y));
             }
         },
 
         create_ball: function(x, y, px, py) {
-            var radius = 1.4;
+            var radius = 1.0;
 
             var bd = new Box2D.b2BodyDef();
             bd.set_type(Box2D.b2_dynamicBody);
@@ -72,7 +91,7 @@ Array.prototype.remove = function(from, to) {
                     var pos = this.body.GetPosition();
                     ctx.beginPath();
                     ctx.arc(pos.get_x(), pos.get_y(), this.radius, 0, 2*Math.PI);
-                    ctx.fillStyle = "rgba(30, 250, 150, 1)";
+                    ctx.fillStyle = "rgba(30, 150, 250, 1)";
                     ctx.fill();
                     ctx.closePath();
                 },
@@ -86,6 +105,190 @@ Array.prototype.remove = function(from, to) {
                             that.collected_coins++;
                         }
                     }
+                }
+            };
+        },
+
+        create_ninja: function(x, y) {
+            var radius = 0.25;
+
+            var bd = new Box2D.b2BodyDef();
+            bd.set_type(Box2D.b2_dynamicBody);
+            bd.set_position( new Box2D.b2Vec2(x, y) );
+
+            var circleShape = new Box2D.b2CircleShape();
+            circleShape.set_m_radius(radius);
+
+            var fd = new Box2D.b2FixtureDef();
+            fd.set_shape(circleShape);
+            fd.set_density(1.0);
+            fd.set_friction(1.0);
+            fd.set_restitution(0.1);
+
+            var body = this.world.CreateBody(bd);
+            body.CreateFixture(fd);
+
+            var that = this;
+
+            return {
+                body: body,
+                radius: radius,
+                alive: true,
+                angle: 0.0,
+                grapple: {
+                    body: null,
+                    joint: null,
+                    attached: false,
+                    shooting: false,
+                    radius: 0.1,
+                },
+
+                render: function() {
+                    var bpos = this.body.GetPosition();
+                    
+                    if(this.grapple.body != null) {
+                        var pos = this.grapple.body.GetPosition();
+                        ctx.beginPath();
+                        ctx.arc(pos.get_x(), pos.get_y(), this.grapple.radius, 0, 2*Math.PI);
+                        ctx.fillStyle = "rgba(255, 120, 50, 1)";
+                        ctx.fill();
+                        ctx.closePath();
+
+                        ctx.strokeStyle = "rgba(255,255,255,0.5)";
+
+                        ctx.beginPath();
+                        ctx.moveTo(bpos.get_x(), bpos.get_y());
+                        ctx.lineTo(pos.get_x(), pos.get_y());
+                        ctx.closePath();
+                        ctx.stroke();
+                    }
+
+                    ctx.beginPath();
+                    ctx.arc(bpos.get_x(), bpos.get_y(), this.radius, 0, 2*Math.PI);
+                    ctx.fillStyle = "rgba(255, 120, 50, 1)";
+                    ctx.fill();
+                    ctx.closePath();
+                },
+
+                update: function() {
+                    if(this.grapple.body != null) {
+                        if(this.grapple.shooting) {
+                            var touching = this.grapple.body.GetContactList().get_contact().IsTouching();
+                            if(touching) {
+                                this.grapple.attached = true;
+                                this.grapple.shooting = false;
+                                this.grapple.body.SetType(Box2D.b2_staticBody);
+
+                                var jointDef = new Box2D.b2DistanceJointDef;
+                                jointDef.set_bodyA(this.grapple.body);
+                                jointDef.set_bodyB(this.body);
+                                console.log(jointDef);
+                                jointDef.set_frequencyHz(0.2);
+                                jointDef.set_dampingRatio(0.3);
+                                this.grapple.joint = that.world.CreateJoint(jointDef);
+                            }
+                        }
+                    }
+
+                    var pos = this.body.GetPosition();
+                    //check collisions with coins
+                    for(var i=0; i<that.coins.length; ++i) {
+                        if(dist(pos.get_x(), pos.get_y(), that.coins[i].x, that.coins[i].y) < this.radius * 1.25) { //buffer for easiness (1.25)
+                            that.coins[i].alive = false;
+                            that.collected_coins++;
+                        }
+                    }
+
+                    //this.body.ApplyForceToCenter( new Box2D.b2Vec2(Math.cos(that.mouseangle) * force, Math.sin(that.mouseangle) * force) );
+                    /*if(this.angle < Math.PI / 2 && this.angle > -Math.PI / 2) {
+                        this.body.AddForce( new Box2D.b2Vec2() )
+                        //pointing right
+                    }*/
+                    switch(game.keyResult) {
+                        case game.KEY_UP:
+                            this.jump();
+                            break;
+                        case game.KEY_LEFT:
+                            this.move(-1);
+                            break;
+                        case game.KEY_RIGHT:
+                            this.move(1);
+                            break;
+                        case game.KEY_UP|game.KEY_LEFT:
+                            this.jump();
+                            this.move(-1);
+                            break;
+                        case game.KEY_UP|game.KEY_RIGHT:
+                            this.jump();
+                            this.move(1);
+                            break;
+                    }
+                },
+
+                move: function(dir) {
+                    var strength = 4;
+                    var max_speed = 8;
+                    if(Math.abs(this.body.GetLinearVelocity().get_x()) < max_speed || sign(dir) != sign(this.body.GetLinearVelocity().get_x())) {
+                        this.body.ApplyForceToCenter(new Box2D.b2Vec2(strength * dir, 0.0));
+                    }
+                },
+
+                jump: function() {
+                    /*
+                    //todo fix contact detect
+                    //maybe just need to loop thru clist?
+                    var strength = 2;
+                    var contact = this.body.GetContactList().get_contact().IsTouching();
+                    if(contact) {
+                        this.body.ApplyLinearImpulse(new Box2D.b2Vec2(0.0, strength));
+                        this.body.SetAngularVelocity(0.0);
+                    }*/
+                },
+
+                shoot_grapple: function() {
+                    if(this.grapple.joint != null) {
+                        that.world.DestroyJoint(this.grapple.joint);
+                        this.grapple.joint = null;
+                    }
+
+                    if(this.grapple.body != null) {
+                        that.world.DestroyBody(this.grapple.body);
+                        this.grapple.body = null;
+                    }
+
+                    if(this.grapple.shooting || this.grapple.attached) {
+                        this.grapple.shooting = false;
+                        this.grapple.attached = false;
+
+                        return;
+                    }
+
+                    this.grapple.shooting = true;
+
+                    var strength = map(dist(game.mousex, game.mousey, canvas.width/2, canvas.height/2), 0, Math.max(canvas.width/2, canvas.height/2), 10, 30);
+                    var x  = this.body.GetPosition().get_x() + (Math.cos(that.mouseangle) * this.radius * 4);
+                    var y  = this.body.GetPosition().get_y() + (Math.sin(that.mouseangle) * this.radius * 4);
+                    var px = Math.cos(that.mouseangle) * strength;
+                    var py = Math.sin(that.mouseangle) * strength;
+
+
+
+                    var bd = new Box2D.b2BodyDef();
+                    bd.set_type(Box2D.b2_dynamicBody);
+                    bd.set_position( new Box2D.b2Vec2(x, y) );
+
+                    var circleShape = new Box2D.b2CircleShape();
+                    circleShape.set_m_radius(this.grapple.radius);
+
+                    var fd = new Box2D.b2FixtureDef();
+                    fd.set_shape(circleShape);
+                    fd.set_density(1.0);
+                    fd.set_friction(1.0);
+                    fd.set_restitution(0.0);
+
+                    this.grapple.body = that.world.CreateBody(bd);
+                    this.grapple.body.CreateFixture(fd);
+                    this.grapple.body.SetLinearVelocity( new Box2D.b2Vec2(px, py) );
                 }
             };
         },
@@ -176,7 +379,7 @@ Array.prototype.remove = function(from, to) {
                 fd.set_shape(polygonShape);
                 fd.set_density(1.0);
                 fd.set_friction(1.0);
-                fd.set_restitution(0.9);
+                fd.set_restitution(0.1);
                 
                 body.CreateFixture(fd);
             }
@@ -269,6 +472,8 @@ Array.prototype.remove = function(from, to) {
                 }
             }
 
+            if(this.ninja != null) this.ninja.update();
+
             if(this.iteration % 30 == 0) {
                 this.bounds_check();
             }
@@ -308,6 +513,10 @@ Array.prototype.remove = function(from, to) {
             
             ctx.save();            
                 ctx.translate(this.game_offset.x, this.game_offset.y);
+                if(this.ninja != null) {
+                    var pos = this.ninja.body.GetPosition();
+                    ctx.translate((-pos.get_x()*this.PTM) + (canvas.width / 2), (pos.get_y()*this.PTM) + canvas.height / 2);
+                }
                 ctx.scale(1, -1);                
                 ctx.scale(this.PTM, this.PTM);
                 ctx.strokeStyle = "rgb(255, 255, 255, 0.0)";
@@ -325,6 +534,29 @@ Array.prototype.remove = function(from, to) {
                     this.asteroids[i].render();
                 }
 
+                if(this.ninja != null) this.ninja.render();
+
+                //draw HUD
+                /*ctx.lineWidth = 0.5;
+                ctx.strokeStyle = "rgba(255,255,255,0.5)";
+
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / this.PTM / 2, -(canvas.height / this.PTM));
+                ctx.lineTo((canvas.width / this.PTM / 2), -(canvas.height / this.PTM)+1);
+                ctx.closePath();
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / this.PTM / 2, -(canvas.height / this.PTM)+1);
+                ctx.lineTo((Math.cos(this.mouseangle) + Math.cos(Math.PI * 0.2)) * 5 + (canvas.width / this.PTM / 2), -(canvas.height / this.PTM) + (Math.sin(this.mouseangle) * 5));
+                ctx.closePath();
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / this.PTM / 2, -(canvas.height / this.PTM)+1);
+                ctx.lineTo((Math.cos(this.mouseangle) + Math.cos(Math.PI * 0.8)) * 5 + (canvas.width / this.PTM / 2), -(canvas.height / this.PTM)+ (Math.sin(this.mouseangle) * 5));
+                ctx.closePath();
+                ctx.stroke();*/
                 
             ctx.restore();
         },
@@ -336,9 +568,47 @@ Array.prototype.remove = function(from, to) {
             var angle = Math.atan2((canvas.height) - y, x - (canvas.width / 2));
             var strength = map(y, 0, canvas.height, 40, 15);
 
-            game.shoot(angle, strength);
+            //game.shoot(angle, strength);
 
             mouseIsDown = true;
+
+            if(game.ninja == null) {
+                game.ninja = game.create_ninja(x / game.PTM, -(y / game.PTM));
+            } else {
+                game.ninja.shoot_grapple();
+            }
+        },
+
+        mousemove: function(e) {
+            var x = event.pageX;
+            var y = event.pageY;
+            game.mousex = x;
+            game.mousey = y;
+            game.mouseangle = Math.atan2((canvas.height / 2) - y, x - (canvas.width / 2));
+        },
+
+        rightclick: function(e) {
+            console.log("right click");
+        },
+
+        keydown: function(e) {
+            var key = e.keyCode;
+            switch(key) {
+                case 87: game.keyResult |= game.KEY_UP; break;
+                case 65: game.keyResult |= game.KEY_LEFT; break;
+                case 83: game.keyResult |= game.KEY_DOWN; break;
+                case 68: game.keyResult |= game.KEY_RIGHT; break;
+            }
+        },
+
+        keyup: function(e) {
+            var key = e.keyCode;
+            switch(key) {
+                case 87: game.keyResult ^= game.KEY_UP; break;
+                case 65: game.keyResult ^= game.KEY_LEFT; break;
+                case 83: game.keyResult ^= game.KEY_DOWN; break;
+                case 68: game.keyResult ^= game.KEY_RIGHT; break;
+            }
         },
 
         shoot: function(angle, strength) {
