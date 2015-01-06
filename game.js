@@ -150,11 +150,15 @@ Array.prototype.remove = function(from, to) {
                         var pos = this.grapple.body.GetPosition();
                         ctx.beginPath();
                         ctx.arc(pos.get_x(), pos.get_y(), this.grapple.radius, 0, 2*Math.PI);
-                        ctx.fillStyle = "rgba(255, 120, 50, 1)";
+                        ctx.fillStyle = "rgba(255, 255, 255, 1)";
                         ctx.fill();
                         ctx.closePath();
 
-                        ctx.strokeStyle = "rgba(255,255,255,0.5)";
+                        if(this.grapple.attached) {
+                            ctx.strokeStyle = "rgba(255,255,255,0.5)";
+                        } else {
+                            ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
+                        }
 
                         ctx.beginPath();
                         ctx.moveTo(bpos.get_x(), bpos.get_y());
@@ -183,9 +187,10 @@ Array.prototype.remove = function(from, to) {
                                 jointDef.set_bodyA(this.grapple.body);
                                 jointDef.set_bodyB(this.body);
                                 console.log(jointDef);
-                                jointDef.set_frequencyHz(0.2);
-                                jointDef.set_dampingRatio(0.3);
+                                jointDef.set_frequencyHz(0.25);
+                                jointDef.set_dampingRatio(0.9);
                                 this.grapple.joint = that.world.CreateJoint(jointDef);
+                                console.log(this.grapple.joint);
                             }
                         }
                     }
@@ -472,7 +477,17 @@ Array.prototype.remove = function(from, to) {
                 }
             }
 
-            if(this.ninja != null) this.ninja.update();
+            if(this.ninja != null) {
+                this.ninja.update();
+                if(this.iteration % 60 == 0) {
+                    this.shoot(
+                        this.ninja.body.GetPosition().get_x() - (canvas.width / 2 / this.PTM),
+                        this.ninja.body.GetPosition().get_y(),
+                        Math.random() * (Math.PI * 2),
+                        15
+                    );
+                }
+            }
 
             if(this.iteration % 30 == 0) {
                 this.bounds_check();
@@ -501,7 +516,6 @@ Array.prototype.remove = function(from, to) {
             }
 
             for(var i=0; i<destroyed_asteroids; i++) {
-                console.log(this.asteroids_created);
                 this.asteroids.push(this.create_asteroid((-this.game_offset.x) - canvas.width/2 + (Math.random() * 10), -10+(Math.random() * 10)));
             }
         },
@@ -509,7 +523,7 @@ Array.prototype.remove = function(from, to) {
         render: function() {
             ctx.fillStyle = 'rgba(20,20,20, 0.5)';
             ctx.fillRect( 0, 0, canvas.width, canvas.height );
-            //this.game_offset.x--;
+            //this.game_offset.x-=0.5;
             
             ctx.save();            
                 ctx.translate(this.game_offset.x, this.game_offset.y);
@@ -568,7 +582,15 @@ Array.prototype.remove = function(from, to) {
             var angle = Math.atan2((canvas.height) - y, x - (canvas.width / 2));
             var strength = map(y, 0, canvas.height, 40, 15);
 
-            //game.shoot(angle, strength);
+            /*
+            //disabled for ninja mode
+            game.shoot(
+                -(game.game_offset.x / game.PTM) + (canvas.width/game.PTM/2),
+                -(canvas.height/game.PTM),
+                angle,
+                strength
+            );
+            */
 
             mouseIsDown = true;
 
@@ -611,13 +633,11 @@ Array.prototype.remove = function(from, to) {
             }
         },
 
-        shoot: function(angle, strength) {
+        shoot: function(x, y, angle, strength) {
             this.balls.push(game.create_ball(
-                -(game.game_offset.x / game.PTM) + (canvas.width/game.PTM/2),
-                -(canvas.height/game.PTM), 
-                Math.cos(angle)*strength,
-                Math.sin(angle)*strength)
-            );
+                x, y,
+                Math.cos(angle)*strength, Math.sin(angle)*strength
+            ));
         }
     };
 
