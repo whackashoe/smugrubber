@@ -29,12 +29,11 @@ Array.prototype.remove = function(from, to) {
         game_offset: { x: 0, y: 0 }, /* translation of game world render */
         PTM: 16, /* pixels to meters */
         asteroids: [],
-        balls    : [],
-        coins    : [],
-        collected_coins: 0,
+        bullets    : [],
         iteration: 0,
         asteroids_created: 0,
-        mouseIsDown: false,
+        mouseDown: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        mouseDownCount: 0,
         ninja: null,
         mouseangle: 0.0,
         mousex: 0,
@@ -47,6 +46,7 @@ Array.prototype.remove = function(from, to) {
 
         init: function() {
             canvas.onmousedown = this.mousedown;
+            canvas.onmouseup   = this.mouseup;
             canvas.onmousemove = this.mousemove;
             document.oncontextmenu = this.rightclick;
             document.onkeydown   = this.keydown;
@@ -60,8 +60,8 @@ Array.prototype.remove = function(from, to) {
             }
         },
 
-        create_ball: function(x, y, px, py) {
-            var radius = 1.0;
+        create_bullet: function(x, y, px, py) {
+            var radius = 0.15;
 
             var bd = new Box2D.b2BodyDef();
             bd.set_type(Box2D.b2_dynamicBody);
@@ -98,23 +98,17 @@ Array.prototype.remove = function(from, to) {
 
                 update: function() {
                     var pos = this.body.GetPosition();
-                    //check collisions with coins
-                    for(var i=0; i<that.coins.length; ++i) {
-                        if(dist(pos.get_x(), pos.get_y(), that.coins[i].x, that.coins[i].y) < this.radius * 1.25) { //buffer for easiness (1.25)
-                            that.coins[i].alive = false;
-                            that.collected_coins++;
-                        }
-                    }
                 }
             };
         },
 
         create_ninja: function(x, y) {
-            var radius = 0.25;
+            var radius = 0.75;
 
             var bd = new Box2D.b2BodyDef();
             bd.set_type(Box2D.b2_dynamicBody);
             bd.set_position( new Box2D.b2Vec2(x, y) );
+            bd.set_fixedRotation(true);
 
             var circleShape = new Box2D.b2CircleShape();
             circleShape.set_m_radius(radius);
@@ -122,7 +116,7 @@ Array.prototype.remove = function(from, to) {
             var fd = new Box2D.b2FixtureDef();
             fd.set_shape(circleShape);
             fd.set_density(1.0);
-            fd.set_friction(1.0);
+            fd.set_friction(0.1);
             fd.set_restitution(0.1);
 
             var body = this.world.CreateBody(bd);
@@ -135,38 +129,10 @@ Array.prototype.remove = function(from, to) {
                 radius: radius,
                 alive: true,
                 angle: 0.0,
-                grapple: {
-                    body: null,
-                    joint: null,
-                    attached: false,
-                    shooting: false,
-                    radius: 0.1,
-                },
 
                 render: function() {
                     var bpos = this.body.GetPosition();
                     
-                    if(this.grapple.body != null) {
-                        var pos = this.grapple.body.GetPosition();
-                        ctx.beginPath();
-                        ctx.arc(pos.get_x(), pos.get_y(), this.grapple.radius, 0, 2*Math.PI);
-                        ctx.fillStyle = "rgba(255, 255, 255, 1)";
-                        ctx.fill();
-                        ctx.closePath();
-
-                        if(this.grapple.attached) {
-                            ctx.strokeStyle = "rgba(255,255,255,0.5)";
-                        } else {
-                            ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
-                        }
-
-                        ctx.beginPath();
-                        ctx.moveTo(bpos.get_x(), bpos.get_y());
-                        ctx.lineTo(pos.get_x(), pos.get_y());
-                        ctx.closePath();
-                        ctx.stroke();
-                    }
-
                     ctx.beginPath();
                     ctx.arc(bpos.get_x(), bpos.get_y(), this.radius, 0, 2*Math.PI);
                     ctx.fillStyle = "rgba(255, 120, 50, 1)";
@@ -175,34 +141,15 @@ Array.prototype.remove = function(from, to) {
                 },
 
                 update: function() {
-                    if(this.grapple.body != null) {
-                        if(this.grapple.shooting) {
-                            var touching = this.grapple.body.GetContactList().get_contact().IsTouching();
-                            if(touching) {
-                                this.grapple.attached = true;
-                                this.grapple.shooting = false;
-                                this.grapple.body.SetType(Box2D.b2_staticBody);
+                    if(game.mouseDown[0]) {
+                        this.shoot();
+                    }
 
-                                var jointDef = new Box2D.b2DistanceJointDef;
-                                jointDef.set_bodyA(this.grapple.body);
-                                jointDef.set_bodyB(this.body);
-                                console.log(jointDef);
-                                jointDef.set_frequencyHz(0.25);
-                                jointDef.set_dampingRatio(0.9);
-                                this.grapple.joint = that.world.CreateJoint(jointDef);
-                                console.log(this.grapple.joint);
-                            }
-                        }
+                    if(game.mouseDown[2]) {
+                       this.jetpack(); 
                     }
 
                     var pos = this.body.GetPosition();
-                    //check collisions with coins
-                    for(var i=0; i<that.coins.length; ++i) {
-                        if(dist(pos.get_x(), pos.get_y(), that.coins[i].x, that.coins[i].y) < this.radius * 1.25) { //buffer for easiness (1.25)
-                            that.coins[i].alive = false;
-                            that.collected_coins++;
-                        }
-                    }
 
                     //this.body.ApplyForceToCenter( new Box2D.b2Vec2(Math.cos(that.mouseangle) * force, Math.sin(that.mouseangle) * force) );
                     /*if(this.angle < Math.PI / 2 && this.angle > -Math.PI / 2) {
@@ -231,69 +178,41 @@ Array.prototype.remove = function(from, to) {
                 },
 
                 move: function(dir) {
-                    var strength = 4;
-                    var max_speed = 8;
+                    var strength = 28;
+                    var max_speed = 15;
                     if(Math.abs(this.body.GetLinearVelocity().get_x()) < max_speed || sign(dir) != sign(this.body.GetLinearVelocity().get_x())) {
                         this.body.ApplyForceToCenter(new Box2D.b2Vec2(strength * dir, 0.0));
                     }
                 },
 
+                shoot: function() {
+                    var angle = Math.atan2((canvas.height / 2) - game.mousey, game.mousex - canvas.width / 2);
+                    var strength = 40;
+                    game.shoot(
+                        this.body.GetPosition().get_x() + (Math.cos(angle) * this.radius * 2),
+                        this.body.GetPosition().get_y() + (Math.sin(angle) * this.radius * 2),
+                        angle,
+                        strength
+                    );
+                },
+
                 jump: function() {
-                    /*
                     //todo fix contact detect
                     //maybe just need to loop thru clist?
-                    var strength = 2;
+                    var strength = 15;
                     var contact = this.body.GetContactList().get_contact().IsTouching();
                     if(contact) {
                         this.body.ApplyLinearImpulse(new Box2D.b2Vec2(0.0, strength));
                         this.body.SetAngularVelocity(0.0);
-                    }*/
+                    }
                 },
 
-                shoot_grapple: function() {
-                    if(this.grapple.joint != null) {
-                        that.world.DestroyJoint(this.grapple.joint);
-                        this.grapple.joint = null;
+                jetpack: function() {
+                    var strength = 1;
+                    var max_speed = 15;
+                    if(this.body.GetLinearVelocity().get_y() < max_speed) {
+                        this.body.ApplyLinearImpulse(new Box2D.b2Vec2(0.0, strength));
                     }
-
-                    if(this.grapple.body != null) {
-                        that.world.DestroyBody(this.grapple.body);
-                        this.grapple.body = null;
-                    }
-
-                    if(this.grapple.shooting || this.grapple.attached) {
-                        this.grapple.shooting = false;
-                        this.grapple.attached = false;
-
-                        return;
-                    }
-
-                    this.grapple.shooting = true;
-
-                    var strength = map(dist(game.mousex, game.mousey, canvas.width/2, canvas.height/2), 0, Math.max(canvas.width/2, canvas.height/2), 10, 30);
-                    var x  = this.body.GetPosition().get_x() + (Math.cos(that.mouseangle) * this.radius * 4);
-                    var y  = this.body.GetPosition().get_y() + (Math.sin(that.mouseangle) * this.radius * 4);
-                    var px = Math.cos(that.mouseangle) * strength;
-                    var py = Math.sin(that.mouseangle) * strength;
-
-
-
-                    var bd = new Box2D.b2BodyDef();
-                    bd.set_type(Box2D.b2_dynamicBody);
-                    bd.set_position( new Box2D.b2Vec2(x, y) );
-
-                    var circleShape = new Box2D.b2CircleShape();
-                    circleShape.set_m_radius(this.grapple.radius);
-
-                    var fd = new Box2D.b2FixtureDef();
-                    fd.set_shape(circleShape);
-                    fd.set_density(1.0);
-                    fd.set_friction(1.0);
-                    fd.set_restitution(0.0);
-
-                    this.grapple.body = that.world.CreateBody(bd);
-                    this.grapple.body.CreateFixture(fd);
-                    this.grapple.body.SetLinearVelocity( new Box2D.b2Vec2(px, py) );
                 }
             };
         },
@@ -318,28 +237,6 @@ Array.prototype.remove = function(from, to) {
                     xtoy * (ax * (size / 2 + nx) * size / 2),
                     ytox * ay *  (size / 2 + ny) * size / 2
                 ) );
-
-                if(a < Math.PI) {
-                    this.coins.push(this.create_coin(
-                        x + (ax * (size/2 + nx) * size / 1.5),
-                        y + (ay *  (size/2 + ny) * size/1.5)
-                    ));
-                
-
-                    if(Math.random() * 100 < 50) {
-                        this.coins.push(this.create_coin(
-                            x + (ax * (size/2 + nx) * size),
-                            y + (ay *  (size/2 + ny) * size)
-                        ));
-                    }
-                }
-
-                if(Math.random() * 100 < 10) {
-                    this.coins.push(this.create_coin(
-                        x + (ax * (size/2 + nx) * size * 1.25),
-                        y + (ay *  (size/2 + ny) * size * 1.25)
-                    ));
-                }
             }
 
             var render_center = { x: 0, y: 0 };
@@ -429,42 +326,17 @@ Array.prototype.remove = function(from, to) {
             };
         },
         
-        create_coin: function(x, y) {
-            return {
-                x: x,
-                y: y, 
-                radius: 0.2,
-                alive: true,
-
-                render: function() {
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.radius, 0, 2*Math.PI);
-                    ctx.fillStyle = "#DDC126";
-                    ctx.fill();
-                    ctx.closePath();
-                }
-            };
-        },
-
         step: function() {
             this.world.Step(1 / 60, 10, 10);
             this.world.ClearForces();
             this.iteration++;
 
-            for(var i=0; i<this.balls.length; ++i) {
-                this.balls[i].update();
+            for(var i=0; i<this.bullets.length; ++i) {
+                this.bullets[i].update();
 
-                if(! this.balls[i].alive) {
-                    this.world.DestroyBody(this.balls[i].body);
-                    this.balls.remove(i);
-                }
-            }
-
-            for(var i=0; i<this.coins.length; ++i) {
-                this.coins[i].render();
-
-                if(! this.coins[i].alive) {
-                    this.coins.remove(i);
+                if(! this.bullets[i].alive) {
+                    this.world.DestroyBody(this.bullets[i].body);
+                    this.bullets.remove(i);
                 }
             }
 
@@ -479,14 +351,6 @@ Array.prototype.remove = function(from, to) {
 
             if(this.ninja != null) {
                 this.ninja.update();
-                if(this.iteration % 60 == 0) {
-                    this.shoot(
-                        this.ninja.body.GetPosition().get_x() - (canvas.width / 2 / this.PTM),
-                        this.ninja.body.GetPosition().get_y(),
-                        Math.random() * (Math.PI * 2),
-                        15
-                    );
-                }
             }
 
             if(this.iteration % 30 == 0) {
@@ -495,15 +359,9 @@ Array.prototype.remove = function(from, to) {
         },
 
         bounds_check: function() {
-            for(var i=0; i<this.balls.length; ++i) {
-                if(this.balls[i].body.GetPosition().get_x() + canvas.width < this.game_offset.x) {
-                    this.balls[i].alive = false;
-                }
-            }
-
-            for(var i=0; i<this.coins.length; ++i) {
-                if(this.coins[i].x + canvas.width + canvas.width < this.game_offset.x) {
-                    this.coins[i].alive = false;
+            for(var i=0; i<this.bullets.length; ++i) {
+                if(this.bullets[i].body.GetPosition().get_x() + canvas.width < this.game_offset.x) {
+                    this.bullets[i].alive = false;
                 }
             }
 
@@ -536,41 +394,17 @@ Array.prototype.remove = function(from, to) {
                 ctx.strokeStyle = "rgb(255, 255, 255, 0.0)";
                 ctx.fillStyle = 'rgb(255,255,0)';
 
-                for(var i=0; i<this.balls.length; ++i) {
-                    this.balls[i].render();
-                }
-
-                for(var i=0; i<this.coins.length; ++i) {
-                    this.coins[i].render();
+                for(var i=0; i<this.bullets.length; ++i) {
+                    this.bullets[i].render();
                 }
 
                 for(var i=0; i<this.asteroids.length; ++i) {
                     this.asteroids[i].render();
                 }
 
-                if(this.ninja != null) this.ninja.render();
-
-                //draw HUD
-                /*ctx.lineWidth = 0.5;
-                ctx.strokeStyle = "rgba(255,255,255,0.5)";
-
-                ctx.beginPath();
-                ctx.moveTo(canvas.width / this.PTM / 2, -(canvas.height / this.PTM));
-                ctx.lineTo((canvas.width / this.PTM / 2), -(canvas.height / this.PTM)+1);
-                ctx.closePath();
-                ctx.stroke();
-                
-                ctx.beginPath();
-                ctx.moveTo(canvas.width / this.PTM / 2, -(canvas.height / this.PTM)+1);
-                ctx.lineTo((Math.cos(this.mouseangle) + Math.cos(Math.PI * 0.2)) * 5 + (canvas.width / this.PTM / 2), -(canvas.height / this.PTM) + (Math.sin(this.mouseangle) * 5));
-                ctx.closePath();
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.moveTo(canvas.width / this.PTM / 2, -(canvas.height / this.PTM)+1);
-                ctx.lineTo((Math.cos(this.mouseangle) + Math.cos(Math.PI * 0.8)) * 5 + (canvas.width / this.PTM / 2), -(canvas.height / this.PTM)+ (Math.sin(this.mouseangle) * 5));
-                ctx.closePath();
-                ctx.stroke();*/
+                if(this.ninja != null) {
+                    this.ninja.render();
+                }
                 
             ctx.restore();
         },
@@ -578,27 +412,17 @@ Array.prototype.remove = function(from, to) {
         mousedown: function(e) {
             var x = event.pageX;
             var y = event.pageY;
-            
-            var angle = Math.atan2((canvas.height) - y, x - (canvas.width / 2));
-            var strength = map(y, 0, canvas.height, 40, 15);
-
-            /*
-            //disabled for ninja mode
-            game.shoot(
-                -(game.game_offset.x / game.PTM) + (canvas.width/game.PTM/2),
-                -(canvas.height/game.PTM),
-                angle,
-                strength
-            );
-            */
-
-            mouseIsDown = true;
+            ++game.mouseDown[e.button];
+            ++game.mouseDownCount;
 
             if(game.ninja == null) {
                 game.ninja = game.create_ninja(x / game.PTM, -(y / game.PTM));
-            } else {
-                game.ninja.shoot_grapple();
             }
+        },
+
+        mouseup: function(e) {
+            --game.mouseDown[e.button];
+            --game.mouseDownCount;
         },
 
         mousemove: function(e) {
@@ -607,10 +431,6 @@ Array.prototype.remove = function(from, to) {
             game.mousex = x;
             game.mousey = y;
             game.mouseangle = Math.atan2((canvas.height / 2) - y, x - (canvas.width / 2));
-        },
-
-        rightclick: function(e) {
-            console.log("right click");
         },
 
         keydown: function(e) {
@@ -634,7 +454,7 @@ Array.prototype.remove = function(from, to) {
         },
 
         shoot: function(x, y, angle, strength) {
-            this.balls.push(game.create_ball(
+            this.bullets.push(game.create_bullet(
                 x, y,
                 Math.cos(angle)*strength, Math.sin(angle)*strength
             ));
