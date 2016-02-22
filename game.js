@@ -25,15 +25,15 @@ Array.prototype.remove = function(from, to) {
     function sign(x) { return x ? x < 0 ? -1 : 1 : 0; }
 
     var game = {
-        world: new Box2D.b2World(new Box2D.b2Vec2(0, -10), false),
+        world: new Box2D.b2World(new Box2D.b2Vec2(0, -15), false),
         game_offset: { x: 0, y: 0 }, /* translation of game world render */
         PTM: 16, /* pixels to meters */
         asteroids: [],
-        bullets    : [],
+        bullets: [],
+        boxes: [],
         iteration: 0,
         asteroids_created: 0,
         mouseDown: [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        mouseDownCount: 0,
         ninja: null,
         mouseangle: 0.0,
         mousex: 0,
@@ -57,6 +57,7 @@ Array.prototype.remove = function(from, to) {
                 var x = i*13 + (Math.random() * 10);
                 var y = -60+(Math.random() * 60);
                 this.asteroids.push(this.create_asteroid(x, y));
+                this.boxes.push(this.create_box(x, y+10));
             }
         },
 
@@ -74,7 +75,7 @@ Array.prototype.remove = function(from, to) {
             fd.set_shape(circleShape);
             fd.set_density(1.0);
             fd.set_friction(1.0);
-            fd.set_restitution(1.0);
+            fd.set_restitution(0.2);
 
             var body = this.world.CreateBody(bd);
             body.CreateFixture(fd);
@@ -117,7 +118,7 @@ Array.prototype.remove = function(from, to) {
             fd.set_shape(circleShape);
             fd.set_density(1.0);
             fd.set_friction(0.1);
-            fd.set_restitution(0.1);
+            fd.set_restitution(0.2);
 
             var body = this.world.CreateBody(bd);
             body.CreateFixture(fd);
@@ -151,11 +152,6 @@ Array.prototype.remove = function(from, to) {
 
                     var pos = this.body.GetPosition();
 
-                    //this.body.ApplyForceToCenter( new Box2D.b2Vec2(Math.cos(that.mouseangle) * force, Math.sin(that.mouseangle) * force) );
-                    /*if(this.angle < Math.PI / 2 && this.angle > -Math.PI / 2) {
-                        this.body.AddForce( new Box2D.b2Vec2() )
-                        //pointing right
-                    }*/
                     switch(game.keyResult) {
                         case game.KEY_UP:
                             this.jump();
@@ -325,13 +321,54 @@ Array.prototype.remove = function(from, to) {
                 }
             };
         },
+        create_box: function(x, y) {
+            var size = 0.5;
+
+            var bd = new Box2D.b2BodyDef();
+            bd.set_type(Box2D.b2_dynamicBody);
+            bd.set_position( new Box2D.b2Vec2(x, y) );
+
+            var shape = new Box2D.b2PolygonShape();
+            shape.SetAsBox(size, size);
+
+            var fd = new Box2D.b2FixtureDef();
+            fd.set_shape(shape);
+            fd.set_density(1.0);
+            fd.set_friction(1.0);
+            fd.set_restitution(0.4);
+
+            var body = this.world.CreateBody(bd);
+            body.CreateFixture(fd);
+
+            var that = this;
+
+            return {
+                body: body,
+                size: size,
+                alive: true,
+
+                render: function() {
+                    var pos = this.body.GetPosition();
+                    var rot = this.body.GetAngle();
+                    ctx.save();
+                        ctx.translate(pos.get_x(), pos.get_y());
+                        ctx.rotate(rot);
+                        ctx.fillStyle = "rgba(30, 180, 130, 1)";
+                        ctx.fillRect(-this.size, -this.size, this.size*2, this.size*2);
+                    ctx.restore();
+                },
+
+                update: function() {
+                    var pos = this.body.GetPosition();
+                }
+            };
+        },
         
         step: function() {
             this.world.Step(1 / 60, 10, 10);
-            this.world.ClearForces();
             this.iteration++;
 
-            for(var i=0; i<this.bullets.length; ++i) {
+            for(var i=0; i<this.bullets.length; ++i){
                 this.bullets[i].update();
 
                 if(! this.bullets[i].alive) {
@@ -339,6 +376,15 @@ Array.prototype.remove = function(from, to) {
                     this.bullets.remove(i);
                 }
             }
+
+            for(var i=0; i<this.boxes.length; ++i) {
+                this.boxes[i].update();
+
+                if(! this.boxes[i].alive) {
+                    this.world.DestroyBody(this.boxes[i].body);
+                    this.boxes.remove(i);
+                }
+            } 
 
             for(var i=0; i<this.asteroids.length; ++i) {
                 this.asteroids[i].render();
@@ -359,6 +405,12 @@ Array.prototype.remove = function(from, to) {
         },
 
         bounds_check: function() {
+            for(var i=0; i<this.boxes.length; ++i) {
+                if(this.boxes[i].body.GetPosition().get_x() + canvas.width < this.game_offset.x) {
+                    this.boxes[i].alive = false;
+                }
+            }
+
             for(var i=0; i<this.bullets.length; ++i) {
                 if(this.bullets[i].body.GetPosition().get_x() + canvas.width < this.game_offset.x) {
                     this.bullets[i].alive = false;
@@ -394,6 +446,10 @@ Array.prototype.remove = function(from, to) {
                 ctx.strokeStyle = "rgb(255, 255, 255, 0.0)";
                 ctx.fillStyle = 'rgb(255,255,0)';
 
+                for(var i=0; i<this.boxes.length; ++i) {
+                    this.boxes[i].render();
+                }
+
                 for(var i=0; i<this.bullets.length; ++i) {
                     this.bullets[i].render();
                 }
@@ -412,8 +468,7 @@ Array.prototype.remove = function(from, to) {
         mousedown: function(e) {
             var x = event.pageX;
             var y = event.pageY;
-            ++game.mouseDown[e.button];
-            ++game.mouseDownCount;
+            game.mouseDown[e.button] = 1;
 
             if(game.ninja == null) {
                 game.ninja = game.create_ninja(x / game.PTM, -(y / game.PTM));
@@ -422,7 +477,6 @@ Array.prototype.remove = function(from, to) {
 
         mouseup: function(e) {
             --game.mouseDown[e.button];
-            --game.mouseDownCount;
         },
 
         mousemove: function(e) {
