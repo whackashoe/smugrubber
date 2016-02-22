@@ -1,4 +1,3 @@
-
 // Array Remove - By John Resig (MIT Licensed)
 Array.prototype.remove = function(from, to) {
   var rest = this.slice((to || from) + 1 || this.length);
@@ -28,6 +27,7 @@ Array.prototype.remove = function(from, to) {
         world: new Box2D.b2World(new Box2D.b2Vec2(0, -15), false),
         game_offset: { x: 0, y: 0 }, /* translation of game world render */
         PTM: 16, /* pixels to meters */
+        sprites: {},
         asteroids: [],
         bullets: [],
         boxes: [],
@@ -51,6 +51,9 @@ Array.prototype.remove = function(from, to) {
             document.oncontextmenu = this.rightclick;
             document.onkeydown   = this.keydown;
             document.onkeyup     = this.keyup;
+
+            this.sprites.ninja = new Image();
+            this.sprites.ninja.src = 'ninja.png';
 
 
             for(var i=0; i<10; i++) {
@@ -86,6 +89,7 @@ Array.prototype.remove = function(from, to) {
             return {
                 body: body,
                 radius: radius,
+                lifetime: 240,
                 alive: true,
 
                 render: function() {
@@ -98,7 +102,7 @@ Array.prototype.remove = function(from, to) {
                 },
 
                 update: function() {
-                    var pos = this.body.GetPosition();
+                    this.alive = --this.lifetime > 0;
                 }
             };
         },
@@ -133,12 +137,16 @@ Array.prototype.remove = function(from, to) {
 
                 render: function() {
                     var bpos = this.body.GetPosition();
-                    
-                    ctx.beginPath();
-                    ctx.arc(bpos.get_x(), bpos.get_y(), this.radius, 0, 2*Math.PI);
-                    ctx.fillStyle = "rgba(255, 120, 50, 1)";
-                    ctx.fill();
-                    ctx.closePath();
+
+                    ctx.save();
+                        ctx.translate(bpos.get_x(), bpos.get_y());
+                        ctx.scale((game.mousex < window.innerWidth / 2) ? 1 : -1, -1);                
+                        ctx.drawImage(game.sprites.ninja,
+                            -this.radius, -this.radius,
+                            this.radius*2,
+                            this.radius*2
+                        );
+                    ctx.restore();
                 },
 
                 update: function() {
