@@ -30,7 +30,7 @@ Array.prototype.remove = function(from, to) {
         sprites: {},
         asteroids: [],
         bullets: [],
-        boxes: [],
+        crates: [],
         iteration: 0,
         asteroids_created: 0,
         mouseDown: [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -56,11 +56,11 @@ Array.prototype.remove = function(from, to) {
             this.sprites.ninja.src = 'ninja.png';
 
 
-            for(var i=0; i<10; i++) {
-                var x = i*13 + (Math.random() * 10);
+            for(var i=0; i<50; i++) {
+                var x = i*10 + (Math.random() * 10);
                 var y = -60+(Math.random() * 60);
                 this.asteroids.push(this.create_asteroid(x, y));
-                this.boxes.push(this.create_box(x, y+10));
+                this.crates.push(this.create_crate(x, y+10));
             }
         },
 
@@ -329,7 +329,7 @@ Array.prototype.remove = function(from, to) {
                 }
             };
         },
-        create_box: function(x, y) {
+        create_crate: function(x, y) {
             var size = 0.5;
 
             var bd = new Box2D.b2BodyDef();
@@ -385,12 +385,12 @@ Array.prototype.remove = function(from, to) {
                 }
             }
 
-            for(var i=0; i<this.boxes.length; ++i) {
-                this.boxes[i].update();
+            for(var i=0; i<this.crates.length; ++i) {
+                this.crates[i].update();
 
-                if(! this.boxes[i].alive) {
-                    this.world.DestroyBody(this.boxes[i].body);
-                    this.boxes.remove(i);
+                if(! this.crates[i].alive) {
+                    this.world.DestroyBody(this.crates[i].body);
+                    this.crates.remove(i);
                 }
             } 
 
@@ -413,9 +413,9 @@ Array.prototype.remove = function(from, to) {
         },
 
         bounds_check: function() {
-            for(var i=0; i<this.boxes.length; ++i) {
-                if(this.boxes[i].body.GetPosition().get_x() + canvas.width < this.game_offset.x) {
-                    this.boxes[i].alive = false;
+            for(var i=0; i<this.crates.length; ++i) {
+                if(this.crates[i].body.GetPosition().get_x() + canvas.width < this.game_offset.x) {
+                    this.crates[i].alive = false;
                 }
             }
 
@@ -454,8 +454,8 @@ Array.prototype.remove = function(from, to) {
                 ctx.strokeStyle = "rgb(255, 255, 255, 0.0)";
                 ctx.fillStyle = 'rgb(255,255,0)';
 
-                for(var i=0; i<this.boxes.length; ++i) {
-                    this.boxes[i].render();
+                for(var i=0; i<this.crates.length; ++i) {
+                    this.crates[i].render();
                 }
 
                 for(var i=0; i<this.bullets.length; ++i) {
