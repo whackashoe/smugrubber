@@ -439,7 +439,7 @@ Array.prototype.remove = function(from, to) {
         },
 
         render: function() {
-            ctx.fillStyle = 'rgba(20,20,20, 0.5)';
+            ctx.fillStyle = 'rgba(20,20,20, 1)';
             ctx.fillRect( 0, 0, canvas.width, canvas.height );
             //this.game_offset.x-=0.5;
             
