@@ -301,7 +301,7 @@ Array.prototype.remove = function(from, to) {
                     var pos = this.body.GetPosition();
                     ctx.fillStyle = this.color;
                     ctx.strokeStyle = this.color;
-                    ctx.lineWidth = 0.05;
+                    ctx.lineWidth = 0.075;
                     
                     for(var i=0; i<verts.length-1; i++) {
                         ctx.beginPath();
