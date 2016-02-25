@@ -646,7 +646,7 @@ Array.prototype.remove = function(from, to) {
             //this.game_offset.x-=0.5;
             
             ctx.save();            
-                ctx.translate(this.game_offset.x, this.game_offset.y);
+                ctx.translate(this.game_offset.x + canvas.width/2 - game.mousex, this.game_offset.y + canvas.height / 2 - game.mousey);
                 if(this.ninja != null) {
                     var pos = this.ninja.n.body.GetPosition();
                     ctx.translate((-pos.get_x()*this.PTM) + (canvas.width / 2), (pos.get_y()*this.PTM) + canvas.height / 2);
