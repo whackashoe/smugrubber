@@ -47,8 +47,8 @@ Array.prototype.remove = function(from, to) {
         user_data: {},
         sprites: {},
         asteroids: [],
-        bullets: [],
-        crates: [],
+        bullets: {},
+        crates: {},
         iteration: 0,
         asteroids_created: 0,
         mouseDown: [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -71,12 +71,9 @@ Array.prototype.remove = function(from, to) {
             document.onkeyup     = this.keyup;
 
             this.listener.BeginContact = function(contactPtr) {
-                 var contact = Box2D.wrapPointer(contactPtr, Box2D.b2Contact);
-                 var fixtureA = contact.GetFixtureA();
-                 var fixtureB = contact.GetFixtureB();
-
-                var udA = fixtureA.GetUserData();
-                var udB = fixtureB.GetUserData();
+                var contact = Box2D.wrapPointer(contactPtr, Box2D.b2Contact);
+                var udA = contact.GetFixtureA().GetUserData();
+                var udB = contact.GetFixtureB().GetUserData();
 
                 if(udA != 0) {
                     /*
@@ -87,11 +84,18 @@ Array.prototype.remove = function(from, to) {
                     /*console.log("encountered: " + udB);
                     console.log(game.user_data[udB]);*/
                 }
-//                game.listener.BeginContact = function(c) {};
+                game.listener.BeginContact = function(c) {};
+            };
+
+            this.listener.EndContact = function(contactPtr) {
+                var contact = Box2D.wrapPointer(contactPtr, Box2D.b2Contact);
+                var udA = contact.GetFixtureA().GetUserData();
+                var udB = contact.GetFixtureB().GetUserData();
+
+                game.listener.EndContact = function(c) {};
             };
 
             // Empty implementations for unused methods.
-            this.listener.EndContact = function() {};
             this.listener.PreSolve   = function() {};
             this.listener.PostSolve  = function() {};
 
@@ -105,7 +109,7 @@ Array.prototype.remove = function(from, to) {
                 var x = i*10 + (Math.random() * 10);
                 var y = -60+(Math.random() * 60);
                 this.asteroids.push(this.create_asteroid(x, y));
-                this.crates.push(this.create_crate(x, y+10));
+                this.create_crate(x, y+10);
             }
         },
 
@@ -116,6 +120,7 @@ Array.prototype.remove = function(from, to) {
         },
 
         create_bullet: function(x, y, px, py, gun_type) {
+            var id = game.add_user_data({ type: 'bullet', gun_type: gun_type });
             var radius = guns[gun_type].radius;
 
             var bd = new Box2D.b2BodyDef();
@@ -130,8 +135,7 @@ Array.prototype.remove = function(from, to) {
             fd.set_density(guns[gun_type].density);
             fd.set_friction(guns[gun_type].friction);
             fd.set_restitution(guns[gun_type].restitution);
-            fd.set_userData(game.add_user_data({ type: 'bullet', gun_type: gun_type  }));
-            
+            fd.set_userData(id);
 
             var body = this.world.CreateBody(bd);
             body.CreateFixture(fd);
@@ -139,7 +143,7 @@ Array.prototype.remove = function(from, to) {
 
             var that = this;
 
-            return {
+            game.bullets[id] = {
                 body: body,
                 radius: radius,
                 lifetime: guns[gun_type].lifetime,
@@ -161,6 +165,7 @@ Array.prototype.remove = function(from, to) {
         },
 
         create_ninja: function(x, y) {
+            var id = game.add_user_data({ type: 'ninja' });
             var radius = 0.75;
 
             var bd = new Box2D.b2BodyDef();
@@ -176,6 +181,7 @@ Array.prototype.remove = function(from, to) {
             fd.set_density(1.0);
             fd.set_friction(0.1);
             fd.set_restitution(0.2);
+            fd.set_userData(id);
 
             var body = this.world.CreateBody(bd);
             body.CreateFixture(fd);
@@ -269,12 +275,12 @@ Array.prototype.remove = function(from, to) {
                     var angle = Math.atan2((canvas.height / 2) - game.mousey, game.mousex - canvas.width / 2);
                     var strength = guns[this.gun.type].strength;
 
-                    game.bullets.push(game.create_bullet(
+                    game.create_bullet(
                         this.body.GetPosition().get_x() + (Math.cos(angle) * this.radius * 2),
                         this.body.GetPosition().get_y() + (Math.sin(angle) * this.radius * 2),
                         Math.cos(angle)*strength, Math.sin(angle)*strength,
                         this.gun.type
-                    ));
+                    );
 
                     var bink_strength = guns[this.gun.type].selfbink;
                     var bink_angle = angle+Math.PI;
@@ -414,7 +420,9 @@ Array.prototype.remove = function(from, to) {
                 }
             };
         },
+
         create_crate: function(x, y) {
+            var id = game.add_user_data({ type: 'crate' });
             var size = 0.5;
 
             var bd = new Box2D.b2BodyDef();
@@ -429,13 +437,14 @@ Array.prototype.remove = function(from, to) {
             fd.set_density(1.0);
             fd.set_friction(1.0);
             fd.set_restitution(0.4);
+            fd.set_userData(id);
 
             var body = this.world.CreateBody(bd);
             body.CreateFixture(fd);
 
             var that = this;
 
-            return {
+            game.crates[id] = {
                 body: body,
                 size: size,
                 alive: true,
@@ -461,23 +470,25 @@ Array.prototype.remove = function(from, to) {
             this.world.Step(1 / 60, 10, 10);
             this.iteration++;
 
-            for(var i=0; i<this.bullets.length; ++i){
-                this.bullets[i].update();
+            for(var i in this.bullets) {
+                var m = this.bullets[i];
+                m.update();
 
-                if(! this.bullets[i].alive) {
-                    this.world.DestroyBody(this.bullets[i].body);
-                    this.bullets.remove(i);
+                if(! m.alive) {
+                    this.world.DestroyBody(m.body);
+                    delete this.bullets[i];
                 }
             }
 
-            for(var i=0; i<this.crates.length; ++i) {
-                this.crates[i].update();
+            for(var i in this.crates) {
+                var m = this.crates[i];
+                m.update();
 
-                if(! this.crates[i].alive) {
-                    this.world.DestroyBody(this.crates[i].body);
-                    this.crates.remove(i);
+                if(! m.alive) {
+                    this.world.DestroyBody(m.body);
+                    delete this.crates[i];
                 }
-            } 
+            }
 
             for(var i=0; i<this.asteroids.length; ++i) {
                 this.asteroids[i].render();
@@ -498,6 +509,7 @@ Array.prototype.remove = function(from, to) {
         },
 
         bounds_check: function() {
+            /*
             for(var i=0; i<this.crates.length; ++i) {
                 if(this.crates[i].body.GetPosition().get_x() + canvas.width < this.game_offset.x) {
                     this.crates[i].alive = false;
@@ -521,6 +533,7 @@ Array.prototype.remove = function(from, to) {
             for(var i=0; i<destroyed_asteroids; i++) {
                 this.asteroids.push(this.create_asteroid((-this.game_offset.x) - canvas.width/2 + (Math.random() * 10), -10+(Math.random() * 10)));
             }
+            */
         },
 
         render: function() {
@@ -539,11 +552,11 @@ Array.prototype.remove = function(from, to) {
                 ctx.strokeStyle = "rgb(255, 255, 255, 0.0)";
                 ctx.fillStyle = 'rgb(255,255,0)';
 
-                for(var i=0; i<this.crates.length; ++i) {
+                for(var i in this.crates) {
                     this.crates[i].render();
                 }
 
-                for(var i=0; i<this.bullets.length; ++i) {
+                for(var i in this.bullets) {
                     this.bullets[i].render();
                 }
 
