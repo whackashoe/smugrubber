@@ -35,7 +35,20 @@ Array.prototype.remove = function(from, to) {
             fireinterval: 7,
             ammo:         30,
             reloadtime:   80,
-            lifetime:     240
+            lifetime:     240,
+            color:        "rgba(30, 150, 250, 1)"
+        }
+    ];
+
+    var crates = [
+        {
+            name: "health pack",    
+            width:        0.5,
+            height:       0.5,
+            density:      1.0,
+            friction:     1.0,
+            restitution:  0.2,
+            color:        "rgba(180, 20, 90, 1)"
         }
     ];
 
@@ -103,13 +116,11 @@ Array.prototype.remove = function(from, to) {
 
             this.sprites.ninja = new Image();
             this.sprites.ninja.src = 'ninja.png';
-
-
             for(var i=0; i<50; i++) {
                 var x = i*10 + (Math.random() * 10);
                 var y = -60+(Math.random() * 60);
                 this.asteroids.push(this.create_asteroid(x, y));
-                this.create_crate(x, y+10);
+                this.create_crate(x, y+10, 0);
             }
         },
 
@@ -421,22 +432,23 @@ Array.prototype.remove = function(from, to) {
             };
         },
 
-        create_crate: function(x, y) {
-            var id = game.add_user_data({ type: 'crate' });
-            var size = 0.5;
+        create_crate: function(x, y, crate_type) {
+            var id = game.add_user_data({ type: 'crate', crate_type: crate_type });
+            var width  = crates[crate_type].width;
+            var height = crates[crate_type].height;
 
             var bd = new Box2D.b2BodyDef();
             bd.set_type(Box2D.b2_dynamicBody);
             bd.set_position( new Box2D.b2Vec2(x, y) );
 
             var shape = new Box2D.b2PolygonShape();
-            shape.SetAsBox(size, size);
+            shape.SetAsBox(width, height);
 
             var fd = new Box2D.b2FixtureDef();
             fd.set_shape(shape);
-            fd.set_density(1.0);
-            fd.set_friction(1.0);
-            fd.set_restitution(0.4);
+            fd.set_density(crates[crate_type].density);
+            fd.set_friction(crates[crate_type].friction);
+            fd.set_restitution(crates[crate_type].restitution);
             fd.set_userData(id);
 
             var body = this.world.CreateBody(bd);
@@ -446,7 +458,12 @@ Array.prototype.remove = function(from, to) {
 
             game.crates[id] = {
                 body: body,
-                size: size,
+                crate: {
+                    type: crate_type,
+                    width: width,
+                    height: height,
+                    color: crates[crate_type].color
+                },
                 alive: true,
 
                 render: function() {
@@ -455,8 +472,8 @@ Array.prototype.remove = function(from, to) {
                     ctx.save();
                         ctx.translate(pos.get_x(), pos.get_y());
                         ctx.rotate(rot);
-                        ctx.fillStyle = "rgba(30, 180, 130, 1)";
-                        ctx.fillRect(-this.size, -this.size, this.size*2, this.size*2);
+                        ctx.fillStyle = this.crate.color;
+                        ctx.fillRect(-this.crate.width, -this.crate.height, this.crate.width*2, this.crate.height*2);
                     ctx.restore();
                 },
 
