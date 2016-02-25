@@ -36,6 +36,7 @@ Array.prototype.remove = function(from, to) {
             ammo:         30,
             reloadtime:   80,
             lifetime:     240,
+            damage:       0.1,
             color:        "rgba(30, 150, 250, 1)"
         }
     ];
@@ -89,16 +90,81 @@ Array.prototype.remove = function(from, to) {
                 var udA = contact.GetFixtureA().GetUserData();
                 var udB = contact.GetFixtureB().GetUserData();
 
-                if(udA != 0) {
-                    /*
-                    console.log("encountered: " + udA);
-                    console.log(game.user_data[udA]);*/
+                if(udA == 0 || udB == 0) {
+                    console.log("unknown");
+                    return;
                 }
-                if(udB != 0) {
-                    /*console.log("encountered: " + udB);
-                    console.log(game.user_data[udB]);*/
+
+                var tA = game.user_data[udA].type;
+                var tB = game.user_data[udB].type;
+
+                if((tA == 'bullet'   && tB == 'bullet')
+                || (tA == 'asteroid' && tB == 'asteroid')
+                || (tA == 'crate'    && tB == 'crate')
+                || (tA == 'crate'    && tB == 'asteroid')
+                || (tA == 'asteroid' && tB == 'crate')) {
+                    return;
                 }
-                game.listener.BeginContact = function(c) {};
+
+                var bA, bB; //body
+                if(tA == 'bullet')   { bA = game.bullets[udA].body; }
+                if(tA == 'asteroid') { bA = game.asteroids[udA].body; }
+                if(tA == 'crate')    { bA = game.crates[udA].body; }
+                if(tA == 'ninja')    { bA = game.ninjas[udA].body; }
+                
+                if(tB == 'bullet')   { bB = game.bullets[udB].body; }
+                if(tB == 'asteroid') { bB = game.asteroids[udB].body; }
+                if(tB == 'crate')    { bB = game.crates[udB].body; }
+                if(tB == 'ninja')    { bB = game.ninjas[udB].body; }
+                
+
+                var pxA = bA.GetPosition().get_x();
+                var pyA = bA.GetPosition().get_y();
+                var pxB = bB.GetPosition().get_x();
+                var pyB = bB.GetPosition().get_y();
+
+                var angleAB = Math.atan2(pyB - pyA, pxB - pxA);
+                var angleBA = angleAB + Math.PI;
+
+                var mA = bA.GetMass();
+                var mB = bB.GetMass();
+
+                var vxA = bA.GetLinearVelocity().get_x();
+                var vyA = bA.GetLinearVelocity().get_y();
+                var vxB = bB.GetLinearVelocity().get_x();
+                var vyB = bB.GetLinearVelocity().get_y();
+
+                var vdx = vxA - vxB;
+                var vdy = vyA - vyB;
+
+                if(tA == 'ninja' && tB == 'ninja') {
+                    var f = 20 + Math.abs(vdx) + Math.abs(vdy);
+                    var dA = game.ninjas[udA].damage;
+                    var dB = game.ninjas[udA].damage;
+                    bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angleAB) * f * dA, Math.sin(angleAB) * f * dA));
+                    bB.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angleBA) * f * dB, Math.sin(angleBA) * f * dB));
+                }
+
+
+                if(tA == 'ninja' && tB == 'bullet') {
+                    var gd = guns[game.bullets[udB].gun_type].damage;
+                    var f = (Math.abs(vdx) + Math.abs(vdy)) * gd * mA;
+                    var d = game.ninjas[udA].damage;
+                    bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angleBA) * f * d, Math.sin(angleBA) * f * d));
+
+                    game.ninjas[udA].damage += f/100.0;
+                    game.bullets[udB].alive = false;
+                }
+
+                if(tA == 'bullet' && tB == 'ninja') {
+                    var gd = guns[game.bullets[udA].gun_type].damage;
+                    var f = (Math.abs(vdx) + Math.abs(vdy)) * gd * mA;
+                    var d = game.ninjas[udB].damage;
+                    bB.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angleAB) * f * d, Math.sin(angleAB) * f * d));
+
+                    game.ninjas[udB].damage += f/100.0;
+                    game.bullets[udA].alive = false;
+                }
             };
 
             this.listener.EndContact = function(contactPtr) {
@@ -106,7 +172,6 @@ Array.prototype.remove = function(from, to) {
                 var udA = contact.GetFixtureA().GetUserData();
                 var udB = contact.GetFixtureB().GetUserData();
 
-                game.listener.EndContact = function(c) {};
             };
 
             // Empty implementations for unused methods.
@@ -159,6 +224,7 @@ Array.prototype.remove = function(from, to) {
                 body: body,
                 radius: radius,
                 lifetime: guns[gun_type].lifetime,
+                gun_type: gun_type,
                 alive: true,
 
                 render: function() {
@@ -611,7 +677,7 @@ Array.prototype.remove = function(from, to) {
                     ctx.translate(0, canvas.height - hud_height);
                     ctx.font = "48px serif";
                     ctx.fillStyle = 'rgb(255, 255, 255)';
-                    ctx.fillText(this.ninja.n.damage + "%", 10, hud_height * 0.9);
+                    ctx.fillText(Math.floor(this.ninja.n.damage * 100) + "%", 10, hud_height * 0.9);
                 ctx.restore();
             }
         },
