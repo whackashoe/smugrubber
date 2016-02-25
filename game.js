@@ -31,7 +31,7 @@ Array.prototype.remove = function(from, to) {
             density:      1.0,
             friction:     1.0,
             restitution:  0.2,
-            selfbink:     1.5,
+            selfbink:     0.5,
             fireinterval: 7,
             ammo:         30,
             reloadtime:   80,
@@ -62,6 +62,7 @@ Array.prototype.remove = function(from, to) {
         asteroids: {},
         bullets: {},
         crates: {},
+        ninjas: {},
         iteration: 0,
         asteroids_created: 0,
         mouseDown: [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -200,11 +201,12 @@ Array.prototype.remove = function(from, to) {
             var that = this;
             var gun_type = 0;
 
-            return {
+            game.ninjas[id] = {
                 body: body,
                 radius: radius,
                 alive: true,
                 damage: 0,
+                facing_dir: -1,
                 gun: {
                     type: gun_type,
                     ammo:         guns[gun_type].ammo,
@@ -217,7 +219,7 @@ Array.prototype.remove = function(from, to) {
 
                     ctx.save();
                         ctx.translate(bpos.get_x(), bpos.get_y());
-                        ctx.scale((game.mousex < window.innerWidth / 2) ? 1 : -1, -1);                
+                        ctx.scale(this.facing_dir, -1);
                         ctx.drawImage(game.sprites.ninja,
                             -this.radius, -this.radius,
                             this.radius*2,
@@ -234,35 +236,6 @@ Array.prototype.remove = function(from, to) {
                         this.gun.reloadtime--;
                     }
 
-                    if(game.mouseDown[0] ) {
-                        this.shoot();
-                    }
-
-                    if(game.mouseDown[2]) {
-                       this.jetpack(); 
-                    }
-
-                    var pos = this.body.GetPosition();
-
-                    switch(game.keyResult) {
-                        case game.KEY_UP:
-                            this.jump();
-                            break;
-                        case game.KEY_LEFT:
-                            this.move(-1);
-                            break;
-                        case game.KEY_RIGHT:
-                            this.move(1);
-                            break;
-                        case game.KEY_UP|game.KEY_LEFT:
-                            this.jump();
-                            this.move(-1);
-                            break;
-                        case game.KEY_UP|game.KEY_RIGHT:
-                            this.jump();
-                            this.move(1);
-                            break;
-                    }
                 },
 
                 move: function(dir) {
@@ -273,7 +246,7 @@ Array.prototype.remove = function(from, to) {
                     }
                 },
 
-                shoot: function() {
+                shoot: function(angle) {
                     if(this.gun.fireinterval != 0 || this.gun.reloadtime != 0) {
                         return;
                     }
@@ -284,7 +257,6 @@ Array.prototype.remove = function(from, to) {
                         return;
                     }
 
-                    var angle = Math.atan2((canvas.height / 2) - game.mousey, game.mousex - canvas.width / 2);
                     var strength = guns[this.gun.type].strength;
 
                     game.create_bullet(
@@ -320,6 +292,46 @@ Array.prototype.remove = function(from, to) {
                     var max_speed = 15;
                     if(this.body.GetLinearVelocity().get_y() < max_speed) {
                         this.body.ApplyLinearImpulse(new Box2D.b2Vec2(0.0, strength));
+                    }
+                }
+            };
+
+            return id;
+        },
+
+        ninja_human_controller: function(ninja) {
+            return {
+                n: ninja,
+                update: function() {
+                    this.n.facing_dir = (game.mousex < window.innerWidth / 2) ? 1 : -1;
+
+                    if(game.mouseDown[0] ) {
+                        var angle = Math.atan2((canvas.height / 2) - game.mousey, game.mousex - canvas.width / 2);
+                        this.n.shoot(angle);
+                    }
+
+                    if(game.mouseDown[2]) {
+                       this.n.jetpack(); 
+                    }
+
+                    switch(game.keyResult) {
+                        case game.KEY_UP:
+                            this.n.jump();
+                            break;
+                        case game.KEY_LEFT:
+                            this.n.move(-1);
+                            break;
+                        case game.KEY_RIGHT:
+                            this.n.move(1);
+                            break;
+                        case game.KEY_UP|game.KEY_LEFT:
+                            this.n.jump();
+                            this.n.move(-1);
+                            break;
+                        case game.KEY_UP|game.KEY_RIGHT:
+                            this.n.jump();
+                            this.n.move(1);
+                            break;
                     }
                 }
             };
@@ -434,6 +446,8 @@ Array.prototype.remove = function(from, to) {
                     ctx.fill();
                 }
             };
+
+            return id;
         },
 
         create_crate: function(x, y, crate_type) {
@@ -485,6 +499,8 @@ Array.prototype.remove = function(from, to) {
                     var pos = this.body.GetPosition();
                 }
             };
+
+            return id;
         },
         
         step: function() {
@@ -508,6 +524,16 @@ Array.prototype.remove = function(from, to) {
                 if(! m.alive) {
                     this.world.DestroyBody(m.body);
                     delete this.crates[i];
+                }
+            }
+
+            for(var i in this.ninjas) {
+                var m = this.ninjas[i];
+                m.update();
+
+                if(! m.alive) {
+                    this.world.DestroyBody(m.body);
+                    delete this.ninjas[i];
                 }
             }
 
@@ -556,7 +582,7 @@ Array.prototype.remove = function(from, to) {
             ctx.save();            
                 ctx.translate(this.game_offset.x, this.game_offset.y);
                 if(this.ninja != null) {
-                    var pos = this.ninja.body.GetPosition();
+                    var pos = this.ninja.n.body.GetPosition();
                     ctx.translate((-pos.get_x()*this.PTM) + (canvas.width / 2), (pos.get_y()*this.PTM) + canvas.height / 2);
                 }
                 ctx.scale(1, -1);                
@@ -574,10 +600,9 @@ Array.prototype.remove = function(from, to) {
                     this.asteroids[i].render();
                 }
 
-                if(this.ninja != null) {
-                    this.ninja.render();
+                for(var i in this.ninjas) {
+                    this.ninjas[i].render();
                 }
-                
             ctx.restore();
 
             if(this.ninja != null) {
@@ -586,7 +611,7 @@ Array.prototype.remove = function(from, to) {
                     ctx.translate(0, canvas.height - hud_height);
                     ctx.font = "48px serif";
                     ctx.fillStyle = 'rgb(255, 255, 255)';
-                    ctx.fillText(this.ninja.damage + "%", 10, hud_height * 0.9);
+                    ctx.fillText(this.ninja.n.damage + "%", 10, hud_height * 0.9);
                 ctx.restore();
             }
         },
@@ -597,7 +622,12 @@ Array.prototype.remove = function(from, to) {
             game.mouseDown[e.button] = 1;
 
             if(game.ninja == null) {
-                game.ninja = game.create_ninja(x / game.PTM, -(y / game.PTM));
+                var id = game.create_ninja(x / game.PTM, -(y / game.PTM));
+                game.ninja = game.ninja_human_controller(game.ninjas[id]);
+
+                for(var i=0; i<10; ++i) {
+                    game.create_ninja(x / game.PTM + 3*i, -(y / game.PTM));
+                }
             }
         },
 
