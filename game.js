@@ -25,6 +25,54 @@ Array.prototype.remove = function(from, to) {
 
     var guns = [
         {
+            name: "tommy gun",
+            strength:     25.0,
+            radius:       0.15,
+            density:      1.0,
+            friction:     1.0,
+            restitution:  0.2,
+            selfbink:     0.5,
+            fireinterval: 3,
+            ammo:         100,
+            reloadtime:   100,
+            lifetime:     240,
+            damage:       0.1,
+            accuracy:     0.1,
+            color:        "rgb(30, 150, 250)"
+        },
+        {
+            name: "grenade launcher",
+            strength:     20.0,
+            radius:       0.15,
+            density:      1.0,
+            friction:     1.0,
+            restitution:  0.2,
+            selfbink:     5.5,
+            fireinterval: 0,
+            ammo:         1,
+            reloadtime:   30,
+            lifetime:     240,
+            damage:       5.0,
+            accuracy:     0.1,
+            color:        "rgb(30, 150, 250)"
+        },
+        {
+            name: "sniper",
+            strength:     80.0,
+            radius:       0.15,
+            density:      1.0,
+            friction:     1.0,
+            restitution:  0.2,
+            selfbink:     5.5,
+            fireinterval: 30,
+            ammo:         1,
+            reloadtime:   80,
+            lifetime:     240,
+            damage:       0.9,
+            accuracy:     0.1,
+            color:        "rgb(30, 150, 250)"
+        },
+        {
             name: "machine gun",
             strength:     40.0,
             radius:       0.15,
@@ -37,6 +85,7 @@ Array.prototype.remove = function(from, to) {
             reloadtime:   80,
             lifetime:     240,
             damage:       0.1,
+            accuracy:     0.1,
             color:        "rgb(30, 150, 250)"
         }
     ];
@@ -333,6 +382,7 @@ Array.prototype.remove = function(from, to) {
                     }
 
                     var strength = guns[this.gun.type].strength;
+                    angle += guns[this.gun.type].accuracy * noise.simplex2(game.iteration, 0);
 
                     game.create_bullet(
                         this.body.GetPosition().get_x() + (Math.cos(angle) * this.radius * 2),
