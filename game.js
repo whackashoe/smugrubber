@@ -23,6 +23,22 @@ Array.prototype.remove = function(from, to) {
 
     function sign(x) { return x ? x < 0 ? -1 : 1 : 0; }
 
+    var guns = [
+        {
+            name: "machine gun",
+            strength:     40.0,
+            radius:       0.15,
+            density:      1.0,
+            friction:     1.0,
+            restitution:  0.2,
+            selfbink:     1.5,
+            fireinterval: 7,
+            ammo:         30,
+            reloadtime:   80,
+            lifetime:     240
+        }
+    ];
+
     var game = {
         world: new Box2D.b2World(new Box2D.b2Vec2(0, -15), false),
         game_offset: { x: 0, y: 0 }, /* translation of game world render */
@@ -64,8 +80,8 @@ Array.prototype.remove = function(from, to) {
             }
         },
 
-        create_bullet: function(x, y, px, py) {
-            var radius = 0.15;
+        create_bullet: function(x, y, px, py, gun_type) {
+            var radius = guns[gun_type].radius;
 
             var bd = new Box2D.b2BodyDef();
             bd.set_type(Box2D.b2_dynamicBody);
@@ -76,20 +92,20 @@ Array.prototype.remove = function(from, to) {
 
             var fd = new Box2D.b2FixtureDef();
             fd.set_shape(circleShape);
-            fd.set_density(1.0);
-            fd.set_friction(1.0);
-            fd.set_restitution(0.2);
+            fd.set_density(guns[gun_type].density);
+            fd.set_friction(guns[gun_type].friction);
+            fd.set_restitution(guns[gun_type].restitution);
 
             var body = this.world.CreateBody(bd);
             body.CreateFixture(fd);
-            body.SetLinearVelocity( new Box2D.b2Vec2(px, py) )
+            body.SetLinearVelocity(new Box2D.b2Vec2(px, py));
 
             var that = this;
 
             return {
                 body: body,
                 radius: radius,
-                lifetime: 240,
+                lifetime: guns[gun_type].lifetime,
                 alive: true,
 
                 render: function() {
@@ -128,12 +144,18 @@ Array.prototype.remove = function(from, to) {
             body.CreateFixture(fd);
 
             var that = this;
+            var gun_type = 0;
 
             return {
                 body: body,
                 radius: radius,
                 alive: true,
-                angle: 0.0,
+                gun: {
+                    type: gun_type,
+                    ammo:         guns[gun_type].ammo,
+                    fireinterval: guns[gun_type].fireinterval,
+                    reloadtime:   0
+                },
 
                 render: function() {
                     var bpos = this.body.GetPosition();
@@ -150,7 +172,14 @@ Array.prototype.remove = function(from, to) {
                 },
 
                 update: function() {
-                    if(game.mouseDown[0]) {
+                    if(this.gun.fireinterval > 0) {
+                        this.gun.fireinterval--;
+                    }
+                    if(this.gun.reloadtime > 0) {
+                        this.gun.reloadtime--;
+                    }
+
+                    if(game.mouseDown[0] ) {
                         this.shoot();
                     }
 
@@ -190,14 +219,33 @@ Array.prototype.remove = function(from, to) {
                 },
 
                 shoot: function() {
+                    if(this.gun.fireinterval != 0 || this.gun.reloadtime != 0) {
+                        return;
+                    }
+
+                    if(this.gun.ammo == 0) {
+                        this.gun.ammo = guns[this.gun.type].ammo;
+                        this.gun.reloadtime = guns[this.gun.type].reloadtime;
+                        return;
+                    }
+
                     var angle = Math.atan2((canvas.height / 2) - game.mousey, game.mousex - canvas.width / 2);
-                    var strength = 40;
-                    game.shoot(
+                    var strength = guns[this.gun.type].strength;
+
+                    game.bullets.push(game.create_bullet(
                         this.body.GetPosition().get_x() + (Math.cos(angle) * this.radius * 2),
                         this.body.GetPosition().get_y() + (Math.sin(angle) * this.radius * 2),
-                        angle,
-                        strength
-                    );
+                        Math.cos(angle)*strength, Math.sin(angle)*strength,
+                        this.gun.type
+                    ));
+
+                    var bink_strength = guns[this.gun.type].selfbink;
+                    var bink_angle = angle+Math.PI;
+                    this.body.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(bink_angle) * bink_strength, Math.sin(bink_angle) * bink_strength));
+
+
+                    this.gun.fireinterval = guns[this.gun.type].fireinterval;
+                    this.gun.ammo--;
                 },
 
                 jump: function() {
@@ -513,14 +561,8 @@ Array.prototype.remove = function(from, to) {
                 case 83: game.keyResult ^= game.KEY_DOWN; break;
                 case 68: game.keyResult ^= game.KEY_RIGHT; break;
             }
-        },
-
-        shoot: function(x, y, angle, strength) {
-            this.bullets.push(game.create_bullet(
-                x, y,
-                Math.cos(angle)*strength, Math.sin(angle)*strength
-            ));
         }
+
     };
 
     game.init();
