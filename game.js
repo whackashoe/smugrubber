@@ -37,7 +37,7 @@ Array.prototype.remove = function(from, to) {
             reloadtime:   80,
             lifetime:     240,
             damage:       0.1,
-            color:        "rgba(30, 150, 250, 1)"
+            color:        "rgb(30, 150, 250)"
         }
     ];
 
@@ -49,7 +49,15 @@ Array.prototype.remove = function(from, to) {
             density:      1.0,
             friction:     1.0,
             restitution:  0.2,
-            color:        "rgba(180, 20, 90, 1)"
+            color:        "rgb(180, 20, 90)"
+        }
+    ];
+
+    var particles = [
+        {
+            color: "rgb(50, 50, 50)",
+            radius: 0.2,
+            lifetime: 100
         }
     ];
 
@@ -64,6 +72,7 @@ Array.prototype.remove = function(from, to) {
         bullets: {},
         crates: {},
         ninjas: {},
+        particles: {},
         iteration: 0,
         asteroids_created: 0,
         mouseDown: [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -231,7 +240,7 @@ Array.prototype.remove = function(from, to) {
                     var pos = this.body.GetPosition();
                     ctx.beginPath();
                     ctx.arc(pos.get_x(), pos.get_y(), this.radius, 0, 2*Math.PI);
-                    ctx.fillStyle = "rgba(30, 150, 250, 1)";
+                    ctx.fillStyle = "rgb(30, 150, 250)";
                     ctx.fill();
                     ctx.closePath();
                 },
@@ -358,6 +367,7 @@ Array.prototype.remove = function(from, to) {
                     var max_speed = 15;
                     if(this.body.GetLinearVelocity().get_y() < max_speed) {
                         this.body.ApplyLinearImpulse(new Box2D.b2Vec2(0.0, strength));
+                        game.create_particle(this.body.GetPosition().get_x(), this.body.GetPosition().get_y(), (-0.5 + Math.random()) / game.PTM, -0.1 + (-0.5 + Math.random()) / game.PTM, 0);
                     }
                 }
             };
@@ -568,6 +578,34 @@ Array.prototype.remove = function(from, to) {
 
             return id;
         },
+
+        create_particle: function(x, y, px, py, particle_type) {
+            var id = game.add_user_data({ type: 'particle' });
+            
+            game.particles[id] = {
+                x:  x,
+                y:  y,
+                px: px,
+                py: py,
+                type: particle_type,
+                lifetime: particles[particle_type].lifetime,
+                alive: true,
+
+                update: function() {
+                    this.x += this.px;
+                    this.y += this.py;
+                    this.alive = --this.lifetime > 0;
+                },
+
+                render: function() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, particles[this.type].radius, 0, 2*Math.PI);
+                    ctx.fillStyle = particles[this.type].color,
+                    ctx.fill();
+                    ctx.closePath();
+                }
+            };
+        },
         
         step: function() {
             this.world.Step(1 / 60, 10, 10);
@@ -600,6 +638,15 @@ Array.prototype.remove = function(from, to) {
                 if(! m.alive) {
                     this.world.DestroyBody(m.body);
                     delete this.ninjas[i];
+                }
+            }
+
+            for(var i in this.particles) {
+                var m = this.particles[i];
+                m.update();
+
+                if(! m.alive) {
+                    delete this.particles[i];
                 }
             }
 
@@ -641,7 +688,7 @@ Array.prototype.remove = function(from, to) {
         },
 
         render: function() {
-            ctx.fillStyle = 'rgba(20,20,20, 1)';
+            ctx.fillStyle = 'rgb(20, 20, 20)';
             ctx.fillRect( 0, 0, canvas.width, canvas.height );
             //this.game_offset.x-=0.5;
             
@@ -653,6 +700,10 @@ Array.prototype.remove = function(from, to) {
                 }
                 ctx.scale(1, -1);                
                 ctx.scale(this.PTM, this.PTM);
+
+                for(var i in this.particles) {
+                    this.particles[i].render();
+                }
 
                 for(var i in this.crates) {
                     this.crates[i].render();
