@@ -204,6 +204,7 @@ Array.prototype.remove = function(from, to) {
                 body: body,
                 radius: radius,
                 alive: true,
+                damage: 0,
                 gun: {
                     type: gun_type,
                     ammo:         guns[gun_type].ammo,
@@ -567,8 +568,6 @@ Array.prototype.remove = function(from, to) {
                 }
                 ctx.scale(1, -1);                
                 ctx.scale(this.PTM, this.PTM);
-                ctx.strokeStyle = "rgb(255, 255, 255, 0.0)";
-                ctx.fillStyle = 'rgb(255,255,0)';
 
                 for(var i in this.crates) {
                     this.crates[i].render();
@@ -587,6 +586,18 @@ Array.prototype.remove = function(from, to) {
                 }
                 
             ctx.restore();
+
+            if(this.ninja != null) {
+                var hud_height = 50;
+                ctx.save();
+                    ctx.translate(0, canvas.height - hud_height);
+                    ctx.font = "48px serif";
+                    ctx.fillStyle = 'rgb(255, 255, 255)';
+                    ctx.fillText(this.ninja.damage + "%", 10, hud_height * 0.9);
+//                    ctx.fillStyle = 'rgb(255, 255, 0)';
+//                    ctx.fillRect(0, 0, 100, hud_height);
+                ctx.restore();
+            }
         },
 
         mousedown: function(e) {
