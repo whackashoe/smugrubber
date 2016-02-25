@@ -59,7 +59,7 @@ Array.prototype.remove = function(from, to) {
         listener: new Box2D.JSContactListener(),
         user_data: {},
         sprites: {},
-        asteroids: [],
+        asteroids: {},
         bullets: {},
         crates: {},
         iteration: 0,
@@ -119,7 +119,7 @@ Array.prototype.remove = function(from, to) {
             for(var i=0; i<50; i++) {
                 var x = i*10 + (Math.random() * 10);
                 var y = -60+(Math.random() * 60);
-                this.asteroids.push(this.create_asteroid(x, y));
+                this.create_asteroid(x, y);
                 this.create_crate(x, y+10, 0);
             }
         },
@@ -326,6 +326,7 @@ Array.prototype.remove = function(from, to) {
         },
 
         create_asteroid: function(x, y) {
+            var id = game.add_user_data({ type: 'asteroid' });
             this.asteroids_created++;
             var size = 3.5 + (Math.random() * 2.5);
             var edges = 15 + (Math.floor(Math.random()*10));
@@ -390,11 +391,12 @@ Array.prototype.remove = function(from, to) {
                 fd.set_density(1.0);
                 fd.set_friction(1.0);
                 fd.set_restitution(0.1);
+                fd.set_userData(id);
                 
                 body.CreateFixture(fd);
             }
 
-            return {
+            game.asteroids[id] = {
                 body: body,
                 verts: verts,
                 render_center: render_center,
@@ -509,15 +511,6 @@ Array.prototype.remove = function(from, to) {
                 }
             }
 
-            for(var i=0; i<this.asteroids.length; ++i) {
-                this.asteroids[i].render();
-
-                if(! this.asteroids[i].alive) {
-                    this.world.DestroyBody(this.asteroids[i].body);
-                    this.asteroids.remove(i);
-                }
-            }
-
             if(this.ninja != null) {
                 this.ninja.update();
             }
@@ -577,7 +570,7 @@ Array.prototype.remove = function(from, to) {
                     this.bullets[i].render();
                 }
 
-                for(var i=0; i<this.asteroids.length; ++i) {
+                for(var i in this.asteroids) {
                     this.asteroids[i].render();
                 }
 
@@ -594,8 +587,6 @@ Array.prototype.remove = function(from, to) {
                     ctx.font = "48px serif";
                     ctx.fillStyle = 'rgb(255, 255, 255)';
                     ctx.fillText(this.ninja.damage + "%", 10, hud_height * 0.9);
-//                    ctx.fillStyle = 'rgb(255, 255, 0)';
-//                    ctx.fillRect(0, 0, 100, hud_height);
                 ctx.restore();
             }
         },
