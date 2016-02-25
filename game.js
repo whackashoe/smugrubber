@@ -43,6 +43,8 @@ Array.prototype.remove = function(from, to) {
         world: new Box2D.b2World(new Box2D.b2Vec2(0, -15), false),
         game_offset: { x: 0, y: 0 }, /* translation of game world render */
         PTM: 16, /* pixels to meters */
+        listener: new Box2D.JSContactListener(),
+        user_data: {},
         sprites: {},
         asteroids: [],
         bullets: [],
@@ -68,6 +70,33 @@ Array.prototype.remove = function(from, to) {
             document.onkeydown   = this.keydown;
             document.onkeyup     = this.keyup;
 
+            this.listener.BeginContact = function(contactPtr) {
+                 var contact = Box2D.wrapPointer(contactPtr, Box2D.b2Contact);
+                 var fixtureA = contact.GetFixtureA();
+                 var fixtureB = contact.GetFixtureB();
+
+                var udA = fixtureA.GetUserData();
+                var udB = fixtureB.GetUserData();
+
+                if(udA != 0) {
+                    /*
+                    console.log("encountered: " + udA);
+                    console.log(game.user_data[udA]);*/
+                }
+                if(udB != 0) {
+                    /*console.log("encountered: " + udB);
+                    console.log(game.user_data[udB]);*/
+                }
+//                game.listener.BeginContact = function(c) {};
+            };
+
+            // Empty implementations for unused methods.
+            this.listener.EndContact = function() {};
+            this.listener.PreSolve   = function() {};
+            this.listener.PostSolve  = function() {};
+
+            this.world.SetContactListener(this.listener);
+
             this.sprites.ninja = new Image();
             this.sprites.ninja.src = 'ninja.png';
 
@@ -78,6 +107,12 @@ Array.prototype.remove = function(from, to) {
                 this.asteroids.push(this.create_asteroid(x, y));
                 this.crates.push(this.create_crate(x, y+10));
             }
+        },
+
+        add_user_data: function(data) {
+            var id = Math.floor(Math.random() * Math.pow(2, 31));
+            game.user_data[id] = data;
+            return id;
         },
 
         create_bullet: function(x, y, px, py, gun_type) {
@@ -95,6 +130,8 @@ Array.prototype.remove = function(from, to) {
             fd.set_density(guns[gun_type].density);
             fd.set_friction(guns[gun_type].friction);
             fd.set_restitution(guns[gun_type].restitution);
+            fd.set_userData(game.add_user_data({ type: 'bullet', gun_type: gun_type  }));
+            
 
             var body = this.world.CreateBody(bd);
             body.CreateFixture(fd);
