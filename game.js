@@ -289,7 +289,8 @@ Array.prototype.remove = function(from, to) {
                     game.create_bullet(
                         this.body.GetPosition().get_x() + (Math.cos(angle) * this.radius * 2),
                         this.body.GetPosition().get_y() + (Math.sin(angle) * this.radius * 2),
-                        Math.cos(angle)*strength, Math.sin(angle)*strength,
+                        this.body.GetLinearVelocity().get_x() + (Math.cos(angle) * strength),
+                        this.body.GetLinearVelocity().get_y() + (Math.sin(angle) * strength),
                         this.gun.type
                     );
 
