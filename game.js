@@ -322,6 +322,10 @@ Array.prototype.remove = function(from, to) {
                     reloadtime:   0
                 },
 
+                jetpack: {
+                    ammo: settings.ninja.jetpack.max_ammo
+                },
+
                 render: function() {
                     var bpos = this.body.GetPosition();
                     var r = settings.ninja.body.radius;
@@ -337,10 +341,14 @@ Array.prototype.remove = function(from, to) {
                     if(this.gun.fireinterval > 0) {
                         this.gun.fireinterval--;
                     }
+
                     if(this.gun.reloadtime > 0) {
                         this.gun.reloadtime--;
                     }
 
+                    if(this.jetpack.ammo < settings.ninja.jetpack.max_ammo) {
+                        this.jetpack.ammo += settings.ninja.jetpack.reload_rate;
+                    }
                 },
 
                 move: function(dir) {
@@ -391,11 +399,17 @@ Array.prototype.remove = function(from, to) {
                     }
                 },
 
-                jetpack: function() {
+                fire_jetpack: function() {
+                    if(this.jetpack.ammo < 0) {
+                        return;
+                    }
+
                     if(this.body.GetLinearVelocity().get_y() < settings.ninja.jetpack.max_speed) {
                         this.body.ApplyLinearImpulse(new Box2D.b2Vec2(0.0, settings.ninja.jetpack.strength));
                         game.create_particle(this.body.GetPosition().get_x(), this.body.GetPosition().get_y(), (-0.5 + Math.random()) / settings.PTM, -0.1 + (-0.5 + Math.random()) / settings.PTM, 0);
                     }
+
+                    this.jetpack.ammo--;
                 },
 
                 pickup_crate: function(crate) {
@@ -428,7 +442,7 @@ Array.prototype.remove = function(from, to) {
                     }
 
                     if(game.mouseDown[2]) {
-                       this.n.jetpack(); 
+                       this.n.fire_jetpack(); 
                     }
 
                     switch(game.keyResult) {
@@ -746,6 +760,8 @@ Array.prototype.remove = function(from, to) {
                     }
 
                     ctx.fillText(gun_text, 200, hud_height * 0.9);
+
+                    ctx.fillText("jetpack: " + Math.floor(this.ninja.n.jetpack.ammo) + "/" + settings.ninja.jetpack.max_ammo, 700, hud_height * 0.9);
                 ctx.restore();
             }
         },
