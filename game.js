@@ -11,7 +11,6 @@ canvas.width  = document.documentElement.clientWidth;
 canvas.height = document.documentElement.clientHeight;
 
 window.onresize = function() {
-    console.log("on resize");
     canvas.width  = document.documentElement.clientWidth;
     canvas.height = document.documentElement.clientHeight;
 };
@@ -246,6 +245,10 @@ var game = {
 
         this.sprites.ninja = new Image();
         this.sprites.ninja.src = 'ninja.png';
+        this.sprites.gun = new Image();
+        this.sprites.gun.src = 'gun.png';
+
+
         var bounds = { left: 0, right: 0, top: 0, bottom: 0 };
         for(var i=0; i<50; i++) {
             var x = i*10 + (Math.random() * 10);
@@ -405,6 +408,7 @@ var game = {
             body: null,
             alive: true,
             facing_dir: -1,
+            gun_angle: 0.0,
             touching_ground: false,
             respawn_counter: 0,
             name: ((Math.random() < 0.5) ? "Dan" : "Jett"),
@@ -454,17 +458,27 @@ var game = {
 
                 ctx.save();
                     ctx.translate(bpos.get_x(), bpos.get_y());
-                    ctx.scale(1, -1);
-                    ctx.textAlign="center"; 
-                    ctx.fillStyle ='rgb(255, 255, 255)';
-                    ctx.font = '0.65px Andale Mono';
-                    ctx.fillText(this.name + " (" + Math.floor(this.damage*100) + "%)", r, -r*2);
-                    ctx.scale(this.facing_dir, 1);
-                    if(! this.alive) {
-                        ctx.rotate(this.respawn_counter * 0.01);
-                    }
-                    ctx.drawImage(game.sprites.ninja, -r, -r, r*2, r*2);
+                    ctx.scale(1, this.facing_dir);
+                    ctx.rotate(this.gun_angle * this.facing_dir);
+                    ctx.drawImage(game.sprites.gun, 0, 0, r*3, r);
                 ctx.restore();
+
+                ctx.save();
+                    ctx.translate(bpos.get_x(), bpos.get_y());
+                    ctx.scale(1, -1);
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = 'rgb(255, 255, 255)';
+                    ctx.font      = '0.65px Andale Mono';
+                    ctx.fillText(this.name + " (" + Math.floor(this.damage*100) + "%)", r, -r*2);
+                    ctx.save();
+                        ctx.scale(this.facing_dir, 1);
+                        if(! this.alive) {
+                            ctx.rotate(this.respawn_counter * 0.01);
+                        }
+                        ctx.drawImage(game.sprites.ninja, -r, -r, r*2, r*2);
+                    ctx.restore();
+                ctx.restore();
+
             },
 
             update: function() {
@@ -652,6 +666,7 @@ var game = {
             update: function() {
                 this.n.facing_dir = (game.mousex < window.innerWidth / 2) ? 1 : -1;
                 this.angle = Math.atan2((canvas.height / 2) - game.mousey, game.mousex - canvas.width / 2);
+                this.n.gun_angle = this.angle;
 
                 if(game.mouseDown[0] ) {
                     this.n.shoot(this.angle);
@@ -1040,7 +1055,7 @@ var game = {
             var hud_height = 50;
             ctx.save();
                 ctx.translate(0, canvas.height - hud_height);
-                ctx.font = Math.floor(hud_height * 0.5) + "px Andale Mono";
+                ctx.font      = Math.floor(hud_height * 0.5) + "px Andale Mono";
                 ctx.fillStyle = 'rgb(255, 255, 255)';
 
                 if(game.ninja.n.alive) {
@@ -1061,6 +1076,8 @@ var game = {
                     ctx.fillText(gun_text, 200, hud_height * 0.8);
 
                     ctx.fillText("jetpack: " + Math.floor(Math.max(0, game.ninja.n.jetpack.ammo)) + "/" + settings.ninja.jetpack.max_ammo, 700, hud_height * 0.8);
+
+                    ctx.fillText("vx: " + Math.ceil(game.ninja.n.body.GetLinearVelocity().get_x()) + " vy: " + Math.ceil(game.ninja.n.body.GetLinearVelocity().get_y()), 1200, hud_height * 0.8);
                 } else {
                     ctx.fillText("respawning in: " + game.ninja.n.respawn_counter, 10, hud_height * 0.8);
                 }
