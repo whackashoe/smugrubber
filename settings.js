@@ -1,6 +1,6 @@
 var settings = {
     PTM: 16, /* pixels to meters */
-    bound: -50,
+    bound: 20,
     controls: {
         key_up:    87,
         key_left:  65,
