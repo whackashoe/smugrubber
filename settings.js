@@ -1,5 +1,5 @@
 var settings = {
-    PTM: 16, /* pixels to meters */
+    PTM: 24, /* pixels to meters */
     bounds: {
         top:    100,
         bottom: 100,
@@ -21,6 +21,7 @@ var settings = {
         asteroid: 'rgb(220, 60, 191)'
     },
     ninja: {
+        max_damage: 10000,
         move: {
             strength: 28,
             max_speed: 15
@@ -42,16 +43,24 @@ var settings = {
         }
     },
     crates: {
-        health_restore: 2.0
+        health_restore: 2.0,
+        jet_fuel:       1000
     },
     collide: {
-        ninja_to_ninja_base:    20,
-        ninja_to_asteroid_min:  45,
-        ninja_to_asteroid_mult: 0.01,
-        ninja_to_crate_mult:    0.01,
-        ninja_to_crate_mult_f:  0.01,
-        ninja_to_bullet_mult:   0.5,
-        ninja_to_bullet_mult_f: 50.0
+        ninja_to_ninja_base:     20,
+        ninja_to_ninja_mult:     0.01,
+        ninja_to_ninja_mult_f:   1.0,
+        ninja_to_ninja_max_d:    500,
+        ninja_to_ninja_min:      30,
+        ninja_to_asteroid_min:   45,
+        ninja_to_asteroid_mult:  0.01,
+        ninja_to_asteroid_max_d: 500,
+        ninja_to_crate_mult:     0.01,
+        ninja_to_crate_mult_f:   0.01,
+        ninja_to_crate_max_d:    500,
+        ninja_to_bullet_mult:    0.5,
+        ninja_to_bullet_mult_f:  50.0,
+        ninja_to_bullet_max_d:   50.0
     },
     spawnpoint: {
         color: 'rgb(26, 32, 60)',

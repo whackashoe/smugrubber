@@ -11,14 +11,14 @@ var crates = [
         min_dforce:   10
     },
     {
-        name: "gun",    
-        width:        0.5,
-        height:       0.1,
+        name: "jet fuel",
+        width:        0.4,
+        height:       0.4,
         density:      5.0,
         friction:     1.0,
         restitution:  0.2,
-        color:        "rgb(0,100,0)",
-        damage:       1,
+        color:        "rgb(0, 100, 0)",
+        damage:       0,
         min_dforce:   10
     }
 ];

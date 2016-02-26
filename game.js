@@ -9,6 +9,13 @@ var canvas    = document.getElementById("canvas");
 var ctx       = canvas.getContext("2d");
 canvas.width  = document.documentElement.clientWidth;
 canvas.height = document.documentElement.clientHeight;
+
+window.onresize = function() {
+    console.log("on resize");
+    canvas.width  = document.documentElement.clientWidth;
+    canvas.height = document.documentElement.clientHeight;
+};
+
 var meter = new FPSMeter();
 
 function dist(x1, y1, x2, y2) {
@@ -111,11 +118,23 @@ var game = {
             var impactForce = Math.abs(vdx) + Math.abs(vdy);
 
             if(tA == 'ninja' && tB == 'ninja') {
+                var ninjaA = game.ninjas[udA];
+                var ninjaB = game.ninjas[udB];
+
                 var f = settings.collide.ninja_to_ninja_base + impactForce;
-                var dA = game.ninjas[udA].damage;
-                var dB = game.ninjas[udA].damage;
-                bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angleAB) * f * dA, Math.sin(angleAB) * f * dA));
-                bB.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angleBA) * f * dB, Math.sin(angleBA) * f * dB));
+                var dA = ninjaA.damage;
+                var dB = ninjaB.damage;
+
+                var impulseA = f * (dA + 1.0) * settings.collide.ninja_to_ninja_mult_f;
+                var impulseB = f * (dB + 1.0) * settings.collide.ninja_to_ninja_mult_f;
+
+                bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angleAB) * impulseA, Math.sin(angleAB) * impulseA));
+                bB.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angleBA) * impulseB, Math.sin(angleBA) * impulseB));
+
+                if(f < settings.collide.ninja_to_ninja_min) {
+                    ninjaA.damage += Math.min(settings.collide.ninja_to_ninja_max_d, f * settings.collide.ninja_to_ninja_mult);
+                    ninjaB.damage += Math.min(settings.collide.ninja_to_ninja_max_d, f * settings.collide.ninja_to_ninja_mult);
+                }
             }
 
 
@@ -127,11 +146,11 @@ var game = {
                 var f = impactForce * gd * bullet.body.GetMass();
                 var d = ninja.damage;
 
-                var impulse = f * d * settings.collide.ninja_to_bullet_mult_f;
+                var impulse = f * (d + 1.0) * settings.collide.ninja_to_bullet_mult_f;
 
                 bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angle) * impulse, Math.sin(angle) * impulse));
 
-                ninja.damage += f * settings.collide.ninja_to_bullet_mult;
+                ninja.damage += Math.min(settings.collide.ninja_to_bullet_max_d, f * settings.collide.ninja_to_bullet_mult);
 
                 ninja.get_shot(bullet);
             }
@@ -162,8 +181,8 @@ var game = {
                 var d = ninja.damage;
 
                 if(f > crates[crate.crate.type].min_dforce) {
-                    ninja.damage += f * settings.collide.ninja_to_crate_mult
-                    var impulse = f * d * settings.collide.ninja_to_crate_mult_f;
+                    ninja.damage += Math.min(settings.collide.ninja_to_crate_max_d, f * settings.collide.ninja_to_crate_mult)
+                    var impulse = f * (d + 1.0) * settings.collide.ninja_to_crate_mult_f;
 
                     bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angle) * impulse, Math.sin(angle) * impulse));
                 } else {
@@ -238,7 +257,7 @@ var game = {
             if (y < bounds.bottom) { bounds.bottom = y; }
 
             this.create_asteroid(x, y);
-            this.create_crate(x, y+10, 0, 0, 0);
+            this.create_crate(x, y+10, 0, 0, Math.random() < 0.5 ? 0 : 1);
         }
 
         for(var i in game.asteroids) {
@@ -292,17 +311,11 @@ var game = {
         for(var j in game.asteroids) {
             var aj = game.asteroids[j];
 
-            for(var ji=0; ji < aj.verts.length; ++ji) {
-                var jx = aj.body.GetPosition().get_x() + aj.verts[ji].get_x();
-                var jy = aj.body.GetPosition().get_y() + aj.verts[ji].get_y();
+            var jx = aj.body.GetPosition().get_x();
+            var jy = aj.body.GetPosition().get_y();;
 
-                if(jx > x - r && jx < x + r && jy > y - r && jy < y + r) {
-                    cool = false;
-                    break;
-                }
-            }
-
-            if(! cool) {
+            if(jx + aj.width > x - r && jx - aj.width < x + r && jy + aj.height > y - r && jy - aj.height < y + r) {
+                cool = false;
                 break;
             }
         }
@@ -387,7 +400,6 @@ var game = {
 
     create_ninja: function() {
         var id = game.add_user_data({ type: 'ninja' });
-        var gun_type = 0;
 
         game.ninjas[id] = {
             body: null,
@@ -423,6 +435,7 @@ var game = {
                 this.alive = true;
                 this.damage = 0;
 
+                var gun_type = Math.floor(Math.random() * guns.length);
                 this.gun = {
                     type: gun_type,
                     ammo:         guns[gun_type].ammo,
@@ -444,7 +457,7 @@ var game = {
                     ctx.scale(1, -1);
                     ctx.textAlign="center"; 
                     ctx.fillStyle ='rgb(255, 255, 255)';
-                    ctx.font = '0.65px monospace';
+                    ctx.font = '0.65px Andale Mono';
                     ctx.fillText(this.name + " (" + Math.floor(this.damage*100) + "%)", r, -r*2);
                     ctx.scale(this.facing_dir, 1);
                     if(! this.alive) {
@@ -466,6 +479,8 @@ var game = {
 
                     return;
                 }
+
+                this.damage = Math.min(this.damage, settings.ninja.max_damage);
 
                 if(this.gun.fireinterval > 0) {
                     this.gun.fireinterval--;
@@ -508,6 +523,13 @@ var game = {
                 var strength = guns[this.gun.type].strength;
                 angle += guns[this.gun.type].accuracy * noise.simplex2(game.iteration, 0);
 
+                if(isNaN(this.body.GetPosition().get_x())) {
+                    alert("cb x nan");
+                }
+                if(isNaN( angle)) {
+                    alert("cb angle nan");
+                }
+
                 game.create_bullet(
                     this.body.GetPosition().get_x() + (Math.cos(angle) * settings.ninja.body.radius * 2),
                     this.body.GetPosition().get_y() + (Math.sin(angle) * settings.ninja.body.radius * 2),
@@ -523,6 +545,12 @@ var game = {
 
                 this.gun.fireinterval = guns[this.gun.type].fireinterval;
                 this.gun.ammo--;
+
+                if(this.gun.ammo == 0) {
+                    this.gun.ammo = guns[this.gun.type].ammo;
+                    this.gun.reloadtime = guns[this.gun.type].reloadtime;
+                    return;
+                }
             },
 
             jump: function() {
@@ -569,6 +597,9 @@ var game = {
                 // health pack
                 if(crate.crate.type == 0) {
                     this.damage = Math.max(0, this.damage - settings.crates.health_restore);
+                }
+                if(crate.crate.type == 1) {
+                    this.jetpack.ammo += settings.crates.jet_fuel;
                 }
 
                 crate.alive = false;
@@ -694,6 +725,8 @@ var game = {
         var edges = 15 + (Math.floor(Math.random()*10));
         var xtoy = 0.25 + (Math.random() * 1.5);
         var ytox = 0.25 + (Math.random() * 1.5);
+        var width = 0;
+        var height = 0;
 
         var verts = [];
         for(var i=0; i<edges; i++) {
@@ -704,10 +737,18 @@ var game = {
             var nx = 0.5 + Math.abs(noise.simplex2(ax / 1.613 + (x / 13.2) + (y / 82.45), ay / 1.73  + (x / 13.2) + (y / 82.45)));
             var ny = 0.5 + Math.abs(noise.simplex2(ay / 1.613 + (y / 13.2) + (x / 82.45), ax / 1.73  + (y / 13.2) + (x / 82.45)));
 
-            verts.push( new Box2D.b2Vec2(
-                xtoy * (ax * (size / 2 + nx) * size / 2),
-                ytox * ay *  (size / 2 + ny) * size / 2
-            ) );
+            var mx = xtoy * (ax * (size / 2 + nx) * size / 2);
+            var my = ytox * (ay * (size / 2 + ny) * size / 2);
+
+            if(Math.abs(mx) > width) {
+                width = Math.abs(mx);
+            }
+
+            if(Math.abs(my) > height) {
+                height = Math.abs(my);
+            }
+
+            verts.push(new Box2D.b2Vec2(mx, my));
         }
 
         var render_center = { x: 0, y: 0 };
@@ -761,6 +802,8 @@ var game = {
         game.asteroids[id] = {
             body: body,
             verts: verts,
+            height: height,
+            width: width,
             render_center: render_center,
             alive: true,
 
@@ -997,7 +1040,7 @@ var game = {
             var hud_height = 50;
             ctx.save();
                 ctx.translate(0, canvas.height - hud_height);
-                ctx.font = "48px serif";
+                ctx.font = Math.floor(hud_height * 0.5) + "px Andale Mono";
                 ctx.fillStyle = 'rgb(255, 255, 255)';
 
                 if(game.ninja.n.alive) {
@@ -1006,16 +1049,20 @@ var game = {
                     var gun_text = guns[game.ninja.n.gun.type].name + ": ";
 
                     if(game.ninja.n.gun.reloadtime > 0) {
-                        gun_text += "reloading " + game.ninja.n.gun.reloadtime + "/" + guns[game.ninja.n.gun.type].reloadtime;
+                        gun_text += "reloading (" + game.ninja.n.gun.reloadtime + ")";
                     } else {
                         gun_text += ": " + game.ninja.n.gun.ammo + "/" + guns[game.ninja.n.gun.type].ammo;
+
+                        if(game.ninja.n.gun.fireinterval > 0) {
+                            gun_text += " (" + game.ninja.n.gun.fireinterval + ")";
+                        }
                     }
 
-                    ctx.fillText(gun_text, 200, hud_height * 0.9);
+                    ctx.fillText(gun_text, 200, hud_height * 0.8);
 
-                    ctx.fillText("jetpack: " + Math.floor(Math.max(0, game.ninja.n.jetpack.ammo)) + "/" + settings.ninja.jetpack.max_ammo, 700, hud_height * 0.9);
+                    ctx.fillText("jetpack: " + Math.floor(Math.max(0, game.ninja.n.jetpack.ammo)) + "/" + settings.ninja.jetpack.max_ammo, 700, hud_height * 0.8);
                 } else {
-                    ctx.fillText("respawning in: " + game.ninja.n.respawn_counter, 10, hud_height * 0.9);
+                    ctx.fillText("respawning in: " + game.ninja.n.respawn_counter, 10, hud_height * 0.8);
                 }
             ctx.restore();
         }
