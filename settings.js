@@ -6,6 +6,7 @@ var settings = {
         key_left:  65,
         key_down:  83,
         key_right: 68,
+        key_toss:  70,
         change_weapon: 81 // q
     },
     colors: {
@@ -28,6 +29,9 @@ var settings = {
             density: 1.0,
             friction: 0.1,
             restitution: 0.2
+        },
+        toss: {
+            force_mult: 15
         }
     },
     crates: {

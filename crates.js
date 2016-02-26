@@ -11,10 +11,10 @@ var crates = [
         min_dforce:   10
     },
     {
-        name: "jet fuel",    
+        name: "gun",    
         width:        0.5,
-        height:       0.5,
-        density:      1.0,
+        height:       0.1,
+        density:      5.0,
         friction:     1.0,
         restitution:  0.2,
         color:        "rgb(0,100,0)",

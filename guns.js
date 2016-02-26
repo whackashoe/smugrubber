@@ -1,7 +1,7 @@
 var guns = [
     {
         name: "tommy gun",
-        strength:     25.0,
+        strength:     45.0,
         radius:       0.15,
         density:      1.0,
         friction:     1.0,

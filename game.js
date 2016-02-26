@@ -42,10 +42,11 @@ var game = {
     mouseangle: 0.0,
     mousex: 0,
     mousey: 0,
-    KEY_UP   :   1,
-    KEY_RIGHT:   2,
-    KEY_DOWN :   4,
-    KEY_LEFT :   8,
+    KEY_UP   : 1,
+    KEY_RIGHT: 2,
+    KEY_DOWN : 4,
+    KEY_LEFT : 8,
+    KEY_TOSS : 16,
     keyResult: 0,
 
     init: function() {
@@ -151,7 +152,7 @@ var game = {
                 }
             }
             
-            function crate_ninja(crate_ud, ninja_ud) {
+            function crate_ninja(crate_ud, ninja_ud, angle) {
                 var crate = game.crates[crate_ud];
                 var ninja = game.ninjas[ninja_ud];
 
@@ -199,11 +200,11 @@ var game = {
             }
 
             if(tA == 'ninja' && tB == 'crate') {
-                crate_ninja(udB, udA);
+                crate_ninja(udB, udA, angleBA);
             }
 
             if(tA == 'crate' && tB == 'ninja') {
-                crate_ninja(udA, udB);
+                crate_ninja(udA, udB, angleAB);
             }
         };
 
@@ -234,7 +235,7 @@ var game = {
             if (y > tBound){ tBound = y; }
             if (y < bBound){ bBound = y; }
             this.create_asteroid(x, y);
-            this.create_crate(x, y+10, 0);
+            this.create_crate(x, y+10, 0, 0, 0);
         }
         console.log(" leftBoundary: " + lBound + " rightBoundary: " + rBound + " topBoundary: " + tBound + " botBoundary: " + bBound);
         this.create_boundaries(lBound, rBound, bBound, tBound);
@@ -458,9 +459,22 @@ var game = {
                 crate.alive = false;
             },
 
+            toss: function(f, angle) {
+                console.log("toss: " + f + " : " + angle);
+                var x = this.body.GetPosition().get_x();
+                var y = this.body.GetPosition().get_y();
+                var force = settings.ninja.toss.force_mult * f;
+                var crate_type = 1;
+                game.create_crate(x + (Math.cos(angle) * ((settings.ninja.body.radius * 2) + crates[crate_type].width)),
+                    y + (Math.sin(angle) * ((settings.ninja.body.radius * 2)+ crates[crate_type].height)),
+                    this.body.GetLinearVelocity().get_x() + (Math.cos(angle) * force),
+                    this.body.GetLinearVelocity().get_y() + (Math.sin(angle) * force),
+                    crate_type
+                );
+            },
+
             get_shot: function(bullet) {
                 bullet.alive = false;
-                console.log("get shot");
             },
 
             set_gun: function(gun_type) {
@@ -479,12 +493,14 @@ var game = {
     ninja_human_controller: function(ninja) {
         return {
             n: ninja,
+            angle: 0.0,
+            toss_counter: 0,
             update: function() {
                 this.n.facing_dir = (game.mousex < window.innerWidth / 2) ? 1 : -1;
+                this.angle = Math.atan2((canvas.height / 2) - game.mousey, game.mousex - canvas.width / 2);
 
                 if(game.mouseDown[0] ) {
-                    var angle = Math.atan2((canvas.height / 2) - game.mousey, game.mousex - canvas.width / 2);
-                    this.n.shoot(angle);
+                    this.n.shoot(this.angle);
                 }
 
                 if(game.mouseDown[2]) {
@@ -509,6 +525,14 @@ var game = {
                         this.n.jump();
                         this.n.move(1);
                         break;
+                }
+                
+                if(game.keyResult & game.KEY_TOSS) {
+                    this.toss_counter++;
+                } else if(this.toss_counter > 0) {
+                    var toss_force = Math.min(this.toss_counter, 60) / 60.0;
+                    this.n.toss(toss_force, this.angle);
+                    this.toss_counter = 0;
                 }
             }
         };
@@ -653,7 +677,7 @@ var game = {
         return id;
     },
 
-    create_crate: function(x, y, crate_type) {
+    create_crate: function(x, y, px, py, crate_type) {
         var id = game.add_user_data({ type: 'crate', crate_type: crate_type });
         var width  = crates[crate_type].width;
         var height = crates[crate_type].height;
@@ -674,6 +698,7 @@ var game = {
 
         var body = this.world.CreateBody(bd);
         body.CreateFixture(fd);
+        body.SetLinearVelocity(new Box2D.b2Vec2(px, py));
 
         var that = this;
 
@@ -887,6 +912,7 @@ var game = {
             case settings.controls.key_left:  game.keyResult |= game.KEY_LEFT;  break;
             case settings.controls.key_down:  game.keyResult |= game.KEY_DOWN;  break;
             case settings.controls.key_right: game.keyResult |= game.KEY_RIGHT; break;
+            case settings.controls.key_toss:  game.keyResult |= game.KEY_TOSS;  break;
         }
     },
 
@@ -897,6 +923,7 @@ var game = {
             case settings.controls.key_left:  game.keyResult ^= game.KEY_LEFT;  break;
             case settings.controls.key_down:  game.keyResult ^= game.KEY_DOWN;  break;
             case settings.controls.key_right: game.keyResult ^= game.KEY_RIGHT; break;
+            case settings.controls.key_toss:  game.keyResult ^= game.KEY_TOSS;  break;
         }
     }
 
