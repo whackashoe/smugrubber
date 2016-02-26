@@ -652,6 +652,7 @@ var game = {
                 ctx.closePath();
 
                 ctx.fill();
+                ctx.stroke();
             }
         };
 
