@@ -136,7 +136,6 @@ Array.prototype.remove = function(from, to) {
                     var ninja = game.ninjas[ninja_ud];
 
                     if(impactForce > settings.collide.ninja_to_asteroid_min) {
-                        console.log(impactForce);
                         ninja.damage += impactForce * settings.collide.ninja_to_asteroid_mult;
                     }
                 }
