@@ -1,21 +1,5 @@
 var guns = [
     {
-        name: "tommy gun",
-        strength:     45.0,
-        radius:       0.15,
-        density:      1.0,
-        friction:     1.0,
-        restitution:  0.2,
-        selfbink:     0.5,
-        fireinterval: 3,
-        ammo:         50,
-        reloadtime:   100,
-        lifetime:     240,
-        damage:       0.1,
-        accuracy:     0.1,
-        color:        "rgb(130, 130, 130)"
-    },
-    {
         name: "bot pistol",
         strength:     25.0,
         radius:       0.15,
@@ -24,6 +8,22 @@ var guns = [
         restitution:  0.2,
         selfbink:     0.5,
         fireinterval: 20,
+        ammo:         50,
+        reloadtime:   100,
+        lifetime:     240,
+        damage:       0.1,
+        accuracy:     0.1,
+        color:        "rgb(130, 130, 130)"
+    },
+    {
+        name: "tommy gun",
+        strength:     45.0,
+        radius:       0.15,
+        density:      1.0,
+        friction:     1.0,
+        restitution:  0.2,
+        selfbink:     0.5,
+        fireinterval: 3,
         ammo:         50,
         reloadtime:   100,
         lifetime:     240,
@@ -60,7 +60,7 @@ var guns = [
         reloadtime:   80,
         lifetime:     240,
         damage:       0.9,
-        accuracy:     0.1,
+        accuracy:     0.01,
         color:        "rgb(30, 150, 250)"
     },
     {

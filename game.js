@@ -264,16 +264,17 @@ var game = {
         
         // load me
         {
+            var id = game.create_ninja();
             var s = game.random_spawn_point();
-            var id = game.create_ninja(s.x, s.y);
+            game.ninjas[id].spawn(s.x, s.y);
             game.ninja = game.ninja_human_controller(game.ninjas[id]);
         }
         // load bots
         for(var i=0; i<20; ++i) {
+            var id = game.create_ninja();
             var s = game.random_spawn_point();
-            var id = game.create_ninja(s.x, s.y);
+            game.ninjas[id].spawn(s.x, s.y);
             game.ninja_ais.push(game.ninja_ai_controller(game.ninjas[id]));
-            game.ninjas[id].set_gun(1);
         }
     },
 
@@ -384,46 +385,54 @@ var game = {
         };
     },
 
-    create_ninja: function(x, y) {
+    create_ninja: function() {
         var id = game.add_user_data({ type: 'ninja' });
-
-        var bd = new Box2D.b2BodyDef();
-        bd.set_type(Box2D.b2_dynamicBody);
-        bd.set_position( new Box2D.b2Vec2(x, y) );
-        bd.set_fixedRotation(true);
-
-        var circleShape = new Box2D.b2CircleShape();
-        circleShape.set_m_radius(settings.ninja.body.radius);
-
-        var fd = new Box2D.b2FixtureDef();
-        fd.set_shape(circleShape);
-        fd.set_density(settings.ninja.body.density);
-        fd.set_friction(settings.ninja.body.friction);
-        fd.set_restitution(settings.ninja.body.restitution);
-        fd.set_userData(id);
-
-        var body = this.world.CreateBody(bd);
-        body.CreateFixture(fd);
-
-        var that = this;
         var gun_type = 0;
 
         game.ninjas[id] = {
-            body: body,
+            body: null,
             alive: true,
-            damage: 0,
             facing_dir: -1,
             touching_ground: false,
+            respawn_counter: 0,
             name: ((Math.random() < 0.5) ? "Dan" : "Jett"),
-            gun: {
-                type: gun_type,
-                ammo:         guns[gun_type].ammo,
-                fireinterval: guns[gun_type].fireinterval,
-                reloadtime:   0
-            },
 
-            jetpack: {
-                ammo: settings.ninja.jetpack.max_ammo
+            spawn: function(x, y) {
+                var bd = new Box2D.b2BodyDef();
+                bd.set_type(Box2D.b2_dynamicBody);
+                bd.set_position(new Box2D.b2Vec2(x, y));
+                bd.set_fixedRotation(true);
+                bd.set_bullet(true);
+
+                var circleShape = new Box2D.b2CircleShape();
+                circleShape.set_m_radius(settings.ninja.body.radius);
+
+                var fd = new Box2D.b2FixtureDef();
+                fd.set_shape(circleShape);
+                fd.set_density(settings.ninja.body.density);
+                fd.set_friction(settings.ninja.body.friction);
+                fd.set_restitution(settings.ninja.body.restitution);
+                fd.set_userData(id);
+
+                if(this.body != null) {
+                    game.world.DestroyBody(this.body);
+                }
+                this.body = game.world.CreateBody(bd);
+                this.body.CreateFixture(fd);
+
+                this.alive = true;
+                this.damage = 0;
+
+                this.gun = {
+                    type: gun_type,
+                    ammo:         guns[gun_type].ammo,
+                    fireinterval: guns[gun_type].fireinterval,
+                    reloadtime:   0
+                };
+
+                this.jetpack = {
+                    ammo: settings.ninja.jetpack.max_ammo
+                };
             },
 
             render: function() {
@@ -438,11 +447,26 @@ var game = {
                     ctx.font = '0.65px monospace';
                     ctx.fillText(this.name + " (" + Math.floor(this.damage*100) + "%)", r, -r*2);
                     ctx.scale(this.facing_dir, 1);
+                    if(! this.alive) {
+                        ctx.rotate(this.respawn_counter * 0.01);
+                    }
                     ctx.drawImage(game.sprites.ninja, -r, -r, r*2, r*2);
                 ctx.restore();
             },
 
             update: function() {
+                if(! this.alive) {
+                    if(this.respawn_counter > 0) {
+                        this.respawn_counter--;
+                        if(this.respawn_counter == 0) {
+                            var s = game.random_spawn_point();
+                            this.spawn(s.x, s.y);
+                        }
+                    }
+
+                    return;
+                }
+
                 if(this.gun.fireinterval > 0) {
                     this.gun.fireinterval--;
                 }
@@ -457,12 +481,20 @@ var game = {
             },
 
             move: function(dir) {
+                if(! this.alive) {
+                    return;
+                }
+
                 if(Math.abs(this.body.GetLinearVelocity().get_x()) < settings.ninja.move.max_speed || sign(dir) != sign(this.body.GetLinearVelocity().get_x())) {
                     this.body.ApplyForceToCenter(new Box2D.b2Vec2(settings.ninja.move.strength * dir, 0.0));
                 }
             },
 
             shoot: function(angle) {
+                if(! this.alive) {
+                    return;
+                }
+
                 if(this.gun.fireinterval != 0 || this.gun.reloadtime != 0) {
                     return;
                 }
@@ -494,6 +526,10 @@ var game = {
             },
 
             jump: function() {
+                if(! this.alive) {
+                    return;
+                }
+
                 //todo fix contact detect
                 //maybe just need to loop thru clist?
                 var strength = 15;
@@ -505,6 +541,10 @@ var game = {
             },
 
             fire_jetpack: function() {
+                if(! this.alive) {
+                    return;
+                }
+
                 if(this.jetpack.ammo < 0) {
                     return;
                 }
@@ -518,6 +558,10 @@ var game = {
             },
 
             pickup_crate: function(crate) {
+                if(! this.alive) {
+                    return;
+                }
+
                 if(! crate.alive) {
                     return;
                 }
@@ -531,6 +575,10 @@ var game = {
             },
 
             toss: function(f, angle) {
+                if(! this.alive) {
+                    return;
+                }
+
                 console.log("toss: " + f + " : " + angle);
                 var x = this.body.GetPosition().get_x();
                 var y = this.body.GetPosition().get_y();
@@ -549,6 +597,10 @@ var game = {
             },
 
             set_gun: function(gun_type) {
+                if(! this.alive) {
+                    return;
+                }
+
                 this.gun = {
                     type: gun_type,
                     ammo:         guns[gun_type].ammo,
@@ -866,9 +918,8 @@ var game = {
                 m.alive = false;
             }
 
-            if(! m.alive) {
-                this.world.DestroyBody(m.body);
-                delete this.ninjas[i];
+            if(! m.alive && m.respawn_counter == 0) {
+                m.respawn_counter = settings.spawnpoint.ninja_delay;
             }
         }
 
@@ -889,11 +940,12 @@ var game = {
             this.ninja_ais[i].update();
         }
     },
+
     bounds_check: function(body) {
-        if (body.GetPosition().get_x() < game.boundary.left)   { return false;}
-        if (body.GetPosition().get_x() > game.boundary.right)  { return false;}
-        if (body.GetPosition().get_y() > game.boundary.top)    { return false;}
-        if (body.GetPosition().get_y() < game.boundary.bottom) { return false;}
+        if(body.GetPosition().get_x() < game.boundary.left)   { return false;}
+        if(body.GetPosition().get_x() > game.boundary.right)  { return false;}
+        if(body.GetPosition().get_y() > game.boundary.top)    { return false;}
+        if(body.GetPosition().get_y() < game.boundary.bottom) { return false;}
 
         return true;
     },
@@ -947,19 +999,24 @@ var game = {
                 ctx.translate(0, canvas.height - hud_height);
                 ctx.font = "48px serif";
                 ctx.fillStyle = 'rgb(255, 255, 255)';
-                ctx.fillText(Math.floor(game.ninja.n.damage * 100) + "%", 10, hud_height * 0.9);
 
-                var gun_text = guns[game.ninja.n.gun.type].name + ": ";
+                if(game.ninja.n.alive) {
+                    ctx.fillText(Math.floor(game.ninja.n.damage * 100) + "%", 10, hud_height * 0.9);
 
-                if(game.ninja.n.gun.reloadtime > 0) {
-                    gun_text += "reloading " + game.ninja.n.gun.reloadtime + "/" + guns[game.ninja.n.gun.type].reloadtime;
+                    var gun_text = guns[game.ninja.n.gun.type].name + ": ";
+
+                    if(game.ninja.n.gun.reloadtime > 0) {
+                        gun_text += "reloading " + game.ninja.n.gun.reloadtime + "/" + guns[game.ninja.n.gun.type].reloadtime;
+                    } else {
+                        gun_text += ": " + game.ninja.n.gun.ammo + "/" + guns[game.ninja.n.gun.type].ammo;
+                    }
+
+                    ctx.fillText(gun_text, 200, hud_height * 0.9);
+
+                    ctx.fillText("jetpack: " + Math.floor(Math.max(0, game.ninja.n.jetpack.ammo)) + "/" + settings.ninja.jetpack.max_ammo, 700, hud_height * 0.9);
                 } else {
-                    gun_text += ": " + game.ninja.n.gun.ammo + "/" + guns[game.ninja.n.gun.type].ammo;
+                    ctx.fillText("respawning in: " + game.ninja.n.respawn_counter, 10, hud_height * 0.9);
                 }
-
-                ctx.fillText(gun_text, 200, hud_height * 0.9);
-
-                ctx.fillText("jetpack: " + Math.floor(Math.max(0, game.ninja.n.jetpack.ammo)) + "/" + settings.ninja.jetpack.max_ammo, 700, hud_height * 0.9);
             ctx.restore();
         }
 
