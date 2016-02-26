@@ -161,7 +161,9 @@ var game = {
 
                 if(f > crates[crate.crate.type].min_dforce) {
                     ninja.damage += f * settings.collide.ninja_to_crate_mult
-                    bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angle) * f * d, Math.sin(angle) * f * d));
+                    var impulse = f * d * settings.collide.ninja_to_crate_mult_f;
+
+                    bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angle) * impulse, Math.sin(angle) * impulse));
                 } else {
                     ninja.pickup_crate(crate);
                 }
@@ -223,47 +225,39 @@ var game = {
 
         this.sprites.ninja = new Image();
         this.sprites.ninja.src = 'ninja.png';
-        var lBound = 100;
-        var rBound = 0;
-        var tBound = -100;
-        var bBound = 0;
+        var bounds = { left: 0, right: 0, top: 0, bottom: 0 };
         for(var i=0; i<50; i++) {
             var x = i*10 + (Math.random() * 10);
             var y = -60+(Math.random() * 60);
-            if (x < lBound){ lBound = x; }
-            if (x > rBound){ rBound = x; }
-            if (y > tBound){ tBound = y; }
-            if (y < bBound){ bBound = y; }
+
+            if (x < bounds.left)   { bounds.left   = x; }
+            if (x > bounds.right)  { bounds.right  = x; }
+            if (y > bounds.top)    { bounds.top    = y; }
+            if (y < bounds.bottom) { bounds.bottom = y; }
+
             this.create_asteroid(x, y);
             this.create_crate(x, y+10, 0, 0, 0);
         }
-        console.log(" leftBoundary: " + lBound + " rightBoundary: " + rBound + " topBoundary: " + tBound + " botBoundary: " + bBound);
-        this.create_boundaries(lBound - settings.bound, rBound + (settings.bound * 2), bBound - (settings.bound * 2), tBound + settings.bound);
+
+        this.create_boundaries(bounds);
     },
 
-    create_boundaries: function(lB, rB, bB, tB) {
-        var lB = lB;
-        var rb = rB;
-        var bB = bB;
-        var tB = tB;
+    create_boundaries: function(bounds) {
         game.boundaries = {
-            lB: lB,
-            rB: rB,
-            bB: bB,
-            tB: tB,
+            left:   bounds.left   - settings.bounds.left,
+            right:  bounds.right  + settings.bounds.right,
+            bottom: bounds.bottom - settings.bounds.bottom,
+            top:    bounds.top    + settings.bounds.top,
+
             render: function() {
-                var boundCenterX = (rB - lB) / 2;
-                var boundCenterY = (bB + tB) / 2;
-
-                ctx.strokeStyle="red";
-                ctx.lineWidth="1";
-                ctx.rect(lB,tB,rB, bB);
+                ctx.strokeStyle = "red";
+                ctx.lineWidth = "1";
+                ctx.rect(this.left, this.top, this.right - this.left, this.bottom - this.top);
                 ctx.stroke();
-
             }
-
         };
     },
+
     add_user_data: function(data) {
         var id = Math.floor(Math.random() * Math.pow(2, 31));
         game.user_data[id] = data;
@@ -784,6 +778,10 @@ var game = {
             var m = this.crates[i];
             m.update();
 
+            if(! this.bounds_check(m.body)) {
+                m.alive = false;
+            }
+
             if(! m.alive) {
                 this.world.DestroyBody(m.body);
                 delete this.crates[i];
@@ -792,9 +790,11 @@ var game = {
 
         for(var i in this.ninjas) {
             var m = this.ninjas[i];
-            // console.log(m.body);
-            this.bounds_check(m );
             m.update();
+
+            if(! this.bounds_check(m.body)) {
+                m.alive = false;
+            }
 
             if(! m.alive) {
                 this.world.DestroyBody(m.body);
@@ -819,21 +819,13 @@ var game = {
             this.ninja_ais[i].update();
         }
     },
-    bounds_check: function(obj) {
+    bounds_check: function(body) {
+        if (body.GetPosition().get_x() < game.boundaries.left)   { return false;}
+        if (body.GetPosition().get_x() > game.boundaries.right)  { return false;}
+        if (body.GetPosition().get_y() > game.boundaries.top)    { return false;}
+        if (body.GetPosition().get_y() < game.boundaries.bottom) { return false;}
 
-        var xPos = obj.body.GetPosition().get_x();
-        var yPos = obj.body.GetPosition().get_y();
-        if (xPos < game.boundaries.lB){ obj.alive = false;}
-        if (xPos > game.boundaries.rB){ obj.alive = false;}
-        if (yPos > game.boundaries.tB){ obj.alive = false;}
-        if (yPos < game.boundaries.bB){ obj.alive = false;}
-        // console.log(obj.GetPosition() );
-            // console.log(game.boundaries.lB );
-        // obj.get_x()
-        
-        // var pos = obj.GetPosition();
-    
-        // console.log (pos.get_x() );
+        return true;
     },
 
     render: function() {
