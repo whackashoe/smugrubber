@@ -471,6 +471,15 @@ var game = {
             get_shot: function(bullet) {
                 bullet.alive = false;
                 console.log("get shot");
+            },
+
+            set_gun: function(gun_type) {
+                this.gun = {
+                    type: gun_type,
+                    ammo:         guns[gun_type].ammo,
+                    fireinterval: guns[gun_type].fireinterval,
+                    reloadtime:   0
+                };
             }
         };
 
@@ -522,26 +531,20 @@ var game = {
                 x: ninja.body.GetPosition().get_x(),
                 y: ninja.body.GetPosition().get_y()
             },
-            target_ninja: null,
+            target: game.ninja.n.body,
             update: function() {
-                // this.n.facing_dir = (game.mousex < window.innerWidth / 2) ? 1 : -1;
-
+                this.n.facing_dir = this.n.body.GetPosition().get_x() < this.home.x ? 1 : -1;
                 this.n.move(this.n.body.GetPosition().get_x() < this.home.x ? 1 : -1);
-
-                if(game.mouseDown[0] ) {
-                    var angle = Math.atan2((canvas.height / 2) - game.mousey, game.mousex - canvas.width / 2);
-                    this.n.shoot(angle);
+                if(this.n.body.GetPosition().get_y() < this.home.y - 20) {
+                    this.n.fire_jetpack();
                 }
 
-                if(game.mouseDown[2]) {
-                   this.n.fire_jetpack(); 
-                }
+                var angle = Math.atan2(
+                    this.target.GetPosition().get_y() -this.n.body.GetPosition().get_y(),
+                    this.target.GetPosition().get_x() -this.n.body.GetPosition().get_x()
+                );
 
-                switch(game.keyResult) {
-                    case game.KEY_UP:
-                        this.n.jump();
-                        break;
-                }
+                this.n.shoot(angle);
             }
         };
     },
@@ -869,6 +872,7 @@ var game = {
             for(var i=0; i<10; ++i) {
                 var id = game.create_ninja(x / settings.PTM + 3*i, -(y / settings.PTM));
                 game.ninja_ais.push(game.ninja_ai_controller(game.ninjas[id]));
+                game.ninjas[id].set_gun(1);
             }
         }
     },

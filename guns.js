@@ -16,6 +16,22 @@ var guns = [
         color:        "rgb(130, 130, 130)"
     },
     {
+        name: "bot pistol",
+        strength:     25.0,
+        radius:       0.15,
+        density:      1.0,
+        friction:     1.0,
+        restitution:  0.2,
+        selfbink:     0.5,
+        fireinterval: 20,
+        ammo:         50,
+        reloadtime:   100,
+        lifetime:     240,
+        damage:       0.001,
+        accuracy:     0.1,
+        color:        "rgb(130, 130, 130)"
+    },
+    {
         name: "grenade launcher",
         strength:     20.0,
         radius:       0.15,
