@@ -887,6 +887,8 @@ var game = {
             if(this.ninja != null) {
                 var pos = this.ninja.n.body.GetPosition();
                 ctx.translate((-pos.get_x()*settings.PTM) + (canvas.width / 2), (pos.get_y()*settings.PTM) + canvas.height / 2);
+
+                ctx.rotate(map(this.ninja.n.body.GetLinearVelocity().get_x(), -20, 20, -0.005, 0.005));
             }
             ctx.scale(1, -1);                
             ctx.scale(settings.PTM, settings.PTM);
