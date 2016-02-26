@@ -417,13 +417,11 @@ var game = {
                 }
 
                 // health pack
-                console.log(crate.crate.type);
                 if(crate.crate.type == 0) {
                     this.damage = Math.max(0, this.damage - settings.crates.health_restore);
                 }
 
                 crate.alive = false;
-                console.log("pickup");
             },
 
             get_shot: function(bullet) {
