@@ -32,8 +32,9 @@ var game = {
     bullets: {},
     crates: {},
     ninjas: {},
-    boundaries: {},
+    boundary: {},
     particles: {},
+    spawnpoints: {},
     iteration: 0,
     asteroids_created: 0,
     mouseDown: [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -239,19 +240,22 @@ var game = {
             this.create_crate(x, y+10, 0, 0, 0);
         }
 
-        this.create_boundaries(bounds);
-    },
+        for(var i in game.asteroids) {
+            var sp_x = game.asteroids[i].body.GetPosition().get_x();
+            var sp_y = game.asteroids[i].body.GetPosition().get_y() + 15;
 
-    create_boundaries: function(bounds) {
-        game.boundaries = {
+            game.attempt_to_add_spawn_point(sp_x, sp_y);
+        }
+
+        game.boundary = {
             left:   bounds.left   - settings.bounds.left,
             right:  bounds.right  + settings.bounds.right,
             bottom: bounds.bottom - settings.bounds.bottom,
             top:    bounds.top    + settings.bounds.top,
 
             render: function() {
-                ctx.strokeStyle = "red";
-                ctx.lineWidth = "1";
+                ctx.strokeStyle = settings.bounds.color;
+                ctx.lineWidth = settings.bounds.line_w;
                 ctx.rect(this.left, this.top, this.right - this.left, this.bottom - this.top);
                 ctx.stroke();
             }
@@ -261,6 +265,52 @@ var game = {
     add_user_data: function(data) {
         var id = Math.floor(Math.random() * Math.pow(2, 31));
         game.user_data[id] = data;
+        return id;
+    },
+
+    attempt_to_add_spawn_point: function(x, y) {
+        var r = settings.spawnpoint.radius;
+
+        var cool = true;
+
+        for(var j in game.asteroids) {
+            var aj = game.asteroids[j];
+
+            for(var ji=0; ji < aj.verts.length; ++ji) {
+                var jx = aj.body.GetPosition().get_x() + aj.verts[ji].get_x();
+                var jy = aj.body.GetPosition().get_y() + aj.verts[ji].get_y();
+
+                if(jx > x - r && jx < x + r && jy > y - r && jy < y + r) {
+                    cool = false;
+                    break;
+                }
+            }
+
+            if(! cool) {
+                break;
+            }
+        }
+
+        if(cool) {
+            this.create_spawnpoint(x, y);
+        }
+    },
+
+    create_spawnpoint: function(x, y) {
+        var id = game.add_user_data({ type: 'spawnpoint' });
+
+        game.spawnpoints[id] = {
+            x: x,
+            y: y,
+            render: function() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, settings.spawnpoint.radius, 0, 2*Math.PI);
+                ctx.strokeStyle = settings.spawnpoint.color;
+                ctx.stroke();
+                ctx.closePath();
+            }
+        };
+        
         return id;
     },
 
@@ -820,10 +870,10 @@ var game = {
         }
     },
     bounds_check: function(body) {
-        if (body.GetPosition().get_x() < game.boundaries.left)   { return false;}
-        if (body.GetPosition().get_x() > game.boundaries.right)  { return false;}
-        if (body.GetPosition().get_y() > game.boundaries.top)    { return false;}
-        if (body.GetPosition().get_y() < game.boundaries.bottom) { return false;}
+        if (body.GetPosition().get_x() < game.boundary.left)   { return false;}
+        if (body.GetPosition().get_x() > game.boundary.right)  { return false;}
+        if (body.GetPosition().get_y() > game.boundary.top)    { return false;}
+        if (body.GetPosition().get_y() < game.boundary.bottom) { return false;}
 
         return true;
     },
@@ -841,6 +891,10 @@ var game = {
             ctx.scale(1, -1);                
             ctx.scale(settings.PTM, settings.PTM);
 
+            for(var i in this.spawnpoints) {
+                this.spawnpoints[i].render();
+            }
+
             for(var i in this.particles) {
                 this.particles[i].render();
             }
@@ -856,9 +910,8 @@ var game = {
             for(var i in this.asteroids) {
                 this.asteroids[i].render();
             }
-            for(var i in this.boundaries) {
-                this.boundaries.render();
-            }
+
+            this.boundary.render();
 
 
             for(var i in this.ninjas) {

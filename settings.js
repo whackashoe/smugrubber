@@ -4,7 +4,9 @@ var settings = {
         top:    100,
         bottom: 100,
         left:   100,
-        right:  100
+        right:  100,
+        color:  'rgb(255, 0, 0)',
+        line_w:  1
     },
     controls: {
         key_up:    87,
@@ -50,5 +52,9 @@ var settings = {
         ninja_to_crate_mult_f:  0.01,
         ninja_to_bullet_mult:   1.0,
         ninja_to_bullet_mult_f: 50.0
+    },
+    spawnpoint: {
+        color: 'rgb(26, 32, 60)',
+        radius: 3
     }
 };
