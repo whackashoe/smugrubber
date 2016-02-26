@@ -9,6 +9,7 @@ var canvas    = document.getElementById("canvas");
 var ctx       = canvas.getContext("2d");
 canvas.width  = document.documentElement.clientWidth;
 canvas.height = document.documentElement.clientHeight;
+var meter = new FPSMeter();
 
 function dist(x1, y1, x2, y2) {
     var dx = x1 - x2;
@@ -883,65 +884,69 @@ var game = {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         ctx.save();            
-            ctx.translate(this.game_offset.x + canvas.width/2 - game.mousex, this.game_offset.y + canvas.height / 2 - game.mousey);
-            if(this.ninja != null) {
-                var pos = this.ninja.n.body.GetPosition();
+            ctx.translate(game.game_offset.x + canvas.width/2 - game.mousex, game.game_offset.y + canvas.height / 2 - game.mousey);
+            if(game.ninja != null) {
+                var pos = game.ninja.n.body.GetPosition();
                 ctx.translate((-pos.get_x()*settings.PTM) + (canvas.width / 2), (pos.get_y()*settings.PTM) + canvas.height / 2);
 
-                ctx.rotate(map(this.ninja.n.body.GetLinearVelocity().get_x(), -20, 20, -0.005, 0.005));
+                ctx.rotate(map(game.ninja.n.body.GetLinearVelocity().get_x(), -20, 20, -0.005, 0.005));
             }
             ctx.scale(1, -1);                
             ctx.scale(settings.PTM, settings.PTM);
 
-            for(var i in this.spawnpoints) {
-                this.spawnpoints[i].render();
+            for(var i in game.spawnpoints) {
+                game.spawnpoints[i].render();
             }
 
-            for(var i in this.particles) {
-                this.particles[i].render();
+            for(var i in game.particles) {
+                game.particles[i].render();
             }
 
-            for(var i in this.crates) {
-                this.crates[i].render();
+            for(var i in game.crates) {
+                game.crates[i].render();
             }
 
-            for(var i in this.bullets) {
-                this.bullets[i].render();
+            for(var i in game.bullets) {
+                game.bullets[i].render();
             }
 
-            for(var i in this.asteroids) {
-                this.asteroids[i].render();
+            for(var i in game.asteroids) {
+                game.asteroids[i].render();
             }
 
-            this.boundary.render();
+            game.boundary.render();
 
 
-            for(var i in this.ninjas) {
-                this.ninjas[i].render();
+            for(var i in game.ninjas) {
+                game.ninjas[i].render();
             }
         ctx.restore();
 
-        if(this.ninja != null) {
+        if(game.ninja != null) {
             var hud_height = 50;
             ctx.save();
                 ctx.translate(0, canvas.height - hud_height);
                 ctx.font = "48px serif";
                 ctx.fillStyle = 'rgb(255, 255, 255)';
-                ctx.fillText(Math.floor(this.ninja.n.damage * 100) + "%", 10, hud_height * 0.9);
+                ctx.fillText(Math.floor(game.ninja.n.damage * 100) + "%", 10, hud_height * 0.9);
 
-                var gun_text = guns[this.ninja.n.gun.type].name + ": ";
+                var gun_text = guns[game.ninja.n.gun.type].name + ": ";
 
-                if(this.ninja.n.gun.reloadtime > 0) {
-                    gun_text += "reloading " + this.ninja.n.gun.reloadtime + "/" + guns[this.ninja.n.gun.type].reloadtime;
+                if(game.ninja.n.gun.reloadtime > 0) {
+                    gun_text += "reloading " + game.ninja.n.gun.reloadtime + "/" + guns[game.ninja.n.gun.type].reloadtime;
                 } else {
-                    gun_text += ": " + this.ninja.n.gun.ammo + "/" + guns[this.ninja.n.gun.type].ammo;
+                    gun_text += ": " + game.ninja.n.gun.ammo + "/" + guns[game.ninja.n.gun.type].ammo;
                 }
 
                 ctx.fillText(gun_text, 200, hud_height * 0.9);
 
-                ctx.fillText("jetpack: " + Math.floor(Math.max(0, this.ninja.n.jetpack.ammo)) + "/" + settings.ninja.jetpack.max_ammo, 700, hud_height * 0.9);
+                ctx.fillText("jetpack: " + Math.floor(Math.max(0, game.ninja.n.jetpack.ammo)) + "/" + settings.ninja.jetpack.max_ammo, 700, hud_height * 0.9);
             ctx.restore();
         }
+
+
+        window.requestAnimationFrame(game.render);
+        meter.tick();
     },
 
     mousedown: function(e) {
@@ -1000,5 +1005,5 @@ var game = {
 game.init();
 setInterval(function() {
     game.step();
-    game.render();
 }, 1000.0 / 60);
+window.requestAnimationFrame(game.render);
