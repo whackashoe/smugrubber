@@ -342,6 +342,7 @@ var game = {
             damage: 0,
             facing_dir: -1,
             touching_ground: false,
+            name: ((Math.random() < 0.5) ? "Dan" : "Jett"),
             gun: {
                 type: gun_type,
                 ammo:         guns[gun_type].ammo,
@@ -359,7 +360,12 @@ var game = {
 
                 ctx.save();
                     ctx.translate(bpos.get_x(), bpos.get_y());
-                    ctx.scale(this.facing_dir, -1);
+                    ctx.scale(1, -1);
+                    ctx.textAlign="center"; 
+                    ctx.fillStyle ='rgb(255, 255, 255)';
+                    ctx.font = '0.65px monospace';
+                    ctx.fillText(this.name + " (" + Math.floor(this.damage*100) + "%)", r, -r*2);
+                    ctx.scale(this.facing_dir, 1);
                     ctx.drawImage(game.sprites.ninja, -r, -r, r*2, r*2);
                 ctx.restore();
             },
