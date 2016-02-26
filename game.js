@@ -261,6 +261,20 @@ var game = {
                 ctx.stroke();
             }
         };
+        
+        // load me
+        {
+            var s = game.random_spawn_point();
+            var id = game.create_ninja(s.x, s.y);
+            game.ninja = game.ninja_human_controller(game.ninjas[id]);
+        }
+        // load bots
+        for(var i=0; i<20; ++i) {
+            var s = game.random_spawn_point();
+            var id = game.create_ninja(s.x, s.y);
+            game.ninja_ais.push(game.ninja_ai_controller(game.ninjas[id]));
+            game.ninjas[id].set_gun(1);
+        }
     },
 
     add_user_data: function(data) {
@@ -295,6 +309,11 @@ var game = {
         if(cool) {
             this.create_spawnpoint(x, y);
         }
+    },
+
+    random_spawn_point: function() {
+        var keys = Object.keys(game.spawnpoints)
+        return game.spawnpoints[keys[ keys.length * Math.random() << 0]];
     },
 
     create_spawnpoint: function(x, y) {
@@ -953,17 +972,6 @@ var game = {
         var x = event.pageX;
         var y = event.pageY;
         game.mouseDown[e.button] = 1;
-
-        if(game.ninja == null) {
-            var id = game.create_ninja(x / settings.PTM, -(y / settings.PTM));
-            game.ninja = game.ninja_human_controller(game.ninjas[id]);
-
-            for(var i=0; i<10; ++i) {
-                var id = game.create_ninja(x / settings.PTM + 3*i, -(y / settings.PTM));
-                game.ninja_ais.push(game.ninja_ai_controller(game.ninjas[id]));
-                game.ninjas[id].set_gun(1);
-            }
-        }
     },
 
     mouseup: function(e) {
