@@ -241,8 +241,15 @@ var game = {
     },
 
     create_boundaries: function(lB, rB, bB, tB) {
-        game.boundaries[id] = {
-
+        var lB = lB;
+        var rb = rB;
+        var bB = bB;
+        var tB = tB;
+        game.boundaries = {
+            lB: lB,
+            rB: rB,
+            bB: bB,
+            tB: tB,
             render: function() {
                 var boundCenterX = (rB - lB) / 2;
                 var boundCenterY = (bB + tB) / 2;
@@ -779,8 +786,11 @@ var game = {
             this.ninja_ais[i].update();
         }
     },
-    bounds_check: function() {
-
+    bounds_check: function(obj) {
+        // console.log(game.boundaries.lB );
+        // obj.get_x()
+        var pos = obj.n.body.GetPosition();
+        console.log (obj.get_x() );
     },
 
     render: function() {
@@ -812,7 +822,7 @@ var game = {
                 this.asteroids[i].render();
             }
             for(var i in this.boundaries) {
-                this.boundaries[i].render();
+                this.boundaries.render();
             }
 
 
