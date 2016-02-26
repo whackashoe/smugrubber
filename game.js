@@ -37,6 +37,7 @@ var game = {
     asteroids_created: 0,
     mouseDown: [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ninja: null,
+    ninja_ais: [],
     mouseangle: 0.0,
     mousex: 0,
     mousey: 0,
@@ -471,6 +472,37 @@ var game = {
         };
     },
 
+    ninja_ai_controller: function(ninja) {
+        return {
+            n: ninja,
+            home: {
+                x: ninja.body.GetPosition().get_x(),
+                y: ninja.body.GetPosition().get_y()
+            },
+            target_ninja: null,
+            update: function() {
+                // this.n.facing_dir = (game.mousex < window.innerWidth / 2) ? 1 : -1;
+
+                this.n.move(this.n.body.GetPosition().get_x() < this.home.x ? 1 : -1);
+
+                if(game.mouseDown[0] ) {
+                    var angle = Math.atan2((canvas.height / 2) - game.mousey, game.mousex - canvas.width / 2);
+                    this.n.shoot(angle);
+                }
+
+                if(game.mouseDown[2]) {
+                   this.n.fire_jetpack(); 
+                }
+
+                switch(game.keyResult) {
+                    case game.KEY_UP:
+                        this.n.jump();
+                        break;
+                }
+            }
+        };
+    },
+
     create_asteroid: function(x, y) {
         var id = game.add_user_data({ type: 'asteroid' });
         this.asteroids_created++;
@@ -710,6 +742,10 @@ var game = {
         if(this.ninja != null) {
             this.ninja.update();
         }
+
+        for(var i=0; i<this.ninja_ais.length; ++i) {
+            this.ninja_ais[i].update();
+        }
     },
 
     render: function() {
@@ -779,7 +815,8 @@ var game = {
             game.ninja = game.ninja_human_controller(game.ninjas[id]);
 
             for(var i=0; i<10; ++i) {
-                game.create_ninja(x / settings.PTM + 3*i, -(y / settings.PTM));
+                var id = game.create_ninja(x / settings.PTM + 3*i, -(y / settings.PTM));
+                game.ninja_ais.push(game.ninja_ai_controller(game.ninjas[id]));
             }
         }
     },
