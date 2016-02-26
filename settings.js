@@ -28,6 +28,9 @@ var settings = {
             restitution: 0.2
         }
     },
+    crates: {
+        health_restore: 2.0
+    },
     collide: {
         ninja_to_ninja_base:    20,
         ninja_to_asteroid_min:  45,
