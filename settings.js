@@ -4,7 +4,8 @@ var settings = {
         key_up:    87,
         key_left:  65,
         key_down:  83,
-        key_right: 68
+        key_right: 68,
+        change_weapon: 81 // q
     },
     colors: {
         background: 'rgb(20, 20, 20)',
