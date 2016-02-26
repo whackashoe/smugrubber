@@ -769,6 +769,16 @@ Array.prototype.remove = function(from, to) {
                     ctx.font = "48px serif";
                     ctx.fillStyle = 'rgb(255, 255, 255)';
                     ctx.fillText(Math.floor(this.ninja.n.damage * 100) + "%", 10, hud_height * 0.9);
+
+                    var gun_text = guns[this.ninja.n.gun.type].name + ": ";
+
+                    if(this.ninja.n.gun.reloadtime > 0) {
+                        gun_text += "reloading " + this.ninja.n.gun.reloadtime + "/" + guns[this.ninja.n.gun.type].reloadtime;
+                    } else {
+                        gun_text += ": " + this.ninja.n.gun.ammo + "/" + guns[this.ninja.n.gun.type].ammo;
+                    }
+
+                    ctx.fillText(gun_text, 200, hud_height * 0.9);
                 ctx.restore();
             }
         },
