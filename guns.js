@@ -8,7 +8,7 @@ var guns = [
         restitution:  0.2,
         selfbink:     0.5,
         fireinterval: 3,
-        ammo:         100,
+        ammo:         50,
         reloadtime:   100,
         lifetime:     240,
         damage:       0.1,
