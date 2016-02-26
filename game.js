@@ -517,9 +517,10 @@ var game = {
             },
             target: game.ninja.n.body,
             update: function() {
-                this.n.facing_dir = this.n.body.GetPosition().get_x() < this.home.x ? 1 : -1;
-                this.n.move(this.n.body.GetPosition().get_x() < this.home.x ? 1 : -1);
-                if(this.n.body.GetPosition().get_y() < this.home.y - 20) {
+                this.n.facing_dir = this.n.body.GetPosition().get_x() <  ((this.home.x + this.target.GetPosition().get_x()) / 2) ? 1 : -1;
+                this.n.move(this.n.facing_dir);
+                var y_cmp = ((this.home.y + this.target.GetPosition().get_y()) / 2) - 10;
+                if(this.n.body.GetPosition().get_y() < y_cmp) {
                     this.n.fire_jetpack();
                 }
 
