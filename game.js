@@ -130,6 +130,16 @@ Array.prototype.remove = function(from, to) {
                     ninja.get_shot(bullet);
                 }
 
+                function bullet_asteroid(bullet_ud) {
+                    var bullet = game.bullets[bullet_ud];
+                    bullet.alive = false;
+                }
+                
+                function bullet_crate(bullet_ud) {
+                    var bullet = game.bullets[bullet_ud];
+                    bullet.alive = false;
+                }
+                
                 function asteroid_ninja(ninja_ud) {
                     var ninja = game.ninjas[ninja_ud];
 
@@ -137,14 +147,7 @@ Array.prototype.remove = function(from, to) {
                         ninja.damage += impactForce * settings.collide.ninja_to_asteroid_mult;
                     }
                 }
-
-                function asteroid_bullet(asteroid_ud, bullet_ud) {
-                    var bullet = game.bullets[bullet_ud];
-                    var asteroid = game.asteroids[asteroid_ud];
-
-                    bullet.alive = false;
-                }
-
+                
                 function crate_ninja(crate_ud, ninja_ud) {
                     var crate = game.crates[crate_ud];
                     var ninja = game.ninjas[ninja_ud];
@@ -166,6 +169,22 @@ Array.prototype.remove = function(from, to) {
 
                 if(tA == 'bullet' && tB == 'ninja') {
                     bullet_ninja(udA, udB, angleAB);
+                }
+
+                if(tA == 'crate' && tB == 'bullet') {
+                    bullet_crate(udB);
+                }
+
+                if(tA == 'bullet' && tB == 'crate') {
+                    bullet_crate(udA);
+                }
+
+                if(tA == 'asteroid' && tB == 'bullet') {
+                    bullet_asteroid(udB);
+                }
+
+                if(tA == 'bullet' && tB == 'asteroid') {
+                    bullet_asteroid(udA);
                 }
 
                 if(tA == 'ninja' && tB == 'asteroid') {
