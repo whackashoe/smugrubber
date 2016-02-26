@@ -19,9 +19,9 @@ var settings = {
             max_speed: 15
         },
         jetpack: {
-            strength:     2,
+            strength:     1.2,
             max_speed:    15,
-            max_ammo:     1000,
+            max_ammo:     100,
             reload_rate:  0.2
         },
         body: {
