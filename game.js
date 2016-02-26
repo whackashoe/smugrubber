@@ -32,6 +32,7 @@ var game = {
     bullets: {},
     crates: {},
     ninjas: {},
+    boundaries: {},
     particles: {},
     iteration: 0,
     asteroids_created: 0,
@@ -221,14 +222,56 @@ var game = {
 
         this.sprites.ninja = new Image();
         this.sprites.ninja.src = 'ninja.png';
+        var lBound = 100;
+        var rBound = 0;
+        var tBound = -100;
+        var bBound = 0;
         for(var i=0; i<50; i++) {
             var x = i*10 + (Math.random() * 10);
             var y = -60+(Math.random() * 60);
+            if (x < lBound){ lBound = x; }
+            if (x > rBound){ rBound = x; }
+            if (y > tBound){ tBound = y; }
+            if (y < bBound){ bBound = y; }
             this.create_asteroid(x, y);
             this.create_crate(x, y+10, 0);
         }
+        console.log(" leftBoundary: " + lBound + " rightBoundary: " + rBound + " topBoundary: " + tBound + " botBoundary: " + bBound);
+        this.create_boundaries(lBound, rBound, bBound, tBound);
     },
 
+    create_boundaries: function(lB, rB, bB, tB) {
+        game.boundaries[id] = {
+            // body: body,
+            // verts: verts,
+            // render_center: render_center,
+            // alive: true,
+            render: function() {
+                var boundCenterX = (rB - lB) / 2;
+                var boundCenterY = (bB + tB) / 2;
+                // var bound = new Box2D.b2BodyDef();
+                // bound.set_type(Box2D.b2_staticBody);
+                // bound.set_position( new Box2D.b2Vec2(boundCenterX, boundCenterY) );
+
+                // var body = this.world.CreateBody(bound);
+                ctx.strokeStyle="red";
+                ctx.lineWidth="1";
+                // ctx.rect(lB,tB,Math.abs(rB),Math.abs(bB));
+                // ctx.rect(lB,Math.abs(tB),rB,Math.abs(bB));
+                ctx.rect(lB,tB,rB,bB);
+
+                // ctx.rect(lB * settings.PTM, tB * settings.PTM, Math.abs(rB * settings.PTM), Math.abs(bB * settings.PTM));
+                ctx.stroke();
+                // var pos = this.body.GetPosition();
+                // ctx.beginPath();
+                // ctx.arc(pos.get_x(), pos.get_y(), this.radius, 0, 2*Math.PI);
+                // ctx.fillStyle = guns[this.gun_type].color;
+                // ctx.fill();
+                // ctx.closePath();
+            }
+
+        };
+    },
     add_user_data: function(data) {
         var id = Math.floor(Math.random() * Math.pow(2, 31));
         game.user_data[id] = data;
@@ -722,6 +765,7 @@ var game = {
 
         for(var i in this.ninjas) {
             var m = this.ninjas[i];
+            this.bounds_check(m);
             m.update();
 
             if(! m.alive) {
@@ -746,6 +790,9 @@ var game = {
         for(var i=0; i<this.ninja_ais.length; ++i) {
             this.ninja_ais[i].update();
         }
+    },
+    bounds_check: function() {
+
     },
 
     render: function() {
@@ -776,6 +823,10 @@ var game = {
             for(var i in this.asteroids) {
                 this.asteroids[i].render();
             }
+            for(var i in this.boundaries) {
+                this.boundaries[i].render();
+            }
+
 
             for(var i in this.ninjas) {
                 this.ninjas[i].render();
