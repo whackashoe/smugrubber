@@ -26,7 +26,6 @@ Array.prototype.remove = function(from, to) {
     var game = {
         world: new Box2D.b2World(new Box2D.b2Vec2(0, -15), false),
         game_offset: { x: 0, y: 0 }, /* translation of game world render */
-        PTM: 16, /* pixels to meters */
         listener: new Box2D.JSContactListener(),
         user_data: {},
         sprites: {},
@@ -109,7 +108,7 @@ Array.prototype.remove = function(from, to) {
                 var vdy = vyA - vyB;
 
                 if(tA == 'ninja' && tB == 'ninja') {
-                    var f = 20 + Math.abs(vdx) + Math.abs(vdy);
+                    var f = settings.collide.ninja_to_ninja_base + Math.abs(vdx) + Math.abs(vdy);
                     var dA = game.ninjas[udA].damage;
                     var dB = game.ninjas[udA].damage;
                     bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angleAB) * f * dA, Math.sin(angleAB) * f * dA));
@@ -202,7 +201,7 @@ Array.prototype.remove = function(from, to) {
                     var pos = this.body.GetPosition();
                     ctx.beginPath();
                     ctx.arc(pos.get_x(), pos.get_y(), this.radius, 0, 2*Math.PI);
-                    ctx.fillStyle = "rgb(30, 150, 250)";
+                    ctx.fillStyle = guns[this.gun_type].color;
                     ctx.fill();
                     ctx.closePath();
                 },
@@ -215,7 +214,6 @@ Array.prototype.remove = function(from, to) {
 
         create_ninja: function(x, y) {
             var id = game.add_user_data({ type: 'ninja' });
-            var radius = 0.75;
 
             var bd = new Box2D.b2BodyDef();
             bd.set_type(Box2D.b2_dynamicBody);
@@ -223,13 +221,13 @@ Array.prototype.remove = function(from, to) {
             bd.set_fixedRotation(true);
 
             var circleShape = new Box2D.b2CircleShape();
-            circleShape.set_m_radius(radius);
+            circleShape.set_m_radius(settings.ninja.body.radius);
 
             var fd = new Box2D.b2FixtureDef();
             fd.set_shape(circleShape);
-            fd.set_density(1.0);
-            fd.set_friction(0.1);
-            fd.set_restitution(0.2);
+            fd.set_density(settings.ninja.body.density);
+            fd.set_friction(settings.ninja.body.friction);
+            fd.set_restitution(settings.ninja.body.restitution);
             fd.set_userData(id);
 
             var body = this.world.CreateBody(bd);
@@ -240,7 +238,6 @@ Array.prototype.remove = function(from, to) {
 
             game.ninjas[id] = {
                 body: body,
-                radius: radius,
                 alive: true,
                 damage: 0,
                 facing_dir: -1,
@@ -253,15 +250,12 @@ Array.prototype.remove = function(from, to) {
 
                 render: function() {
                     var bpos = this.body.GetPosition();
+                    var r = settings.ninja.body.radius;
 
                     ctx.save();
                         ctx.translate(bpos.get_x(), bpos.get_y());
                         ctx.scale(this.facing_dir, -1);
-                        ctx.drawImage(game.sprites.ninja,
-                            -this.radius, -this.radius,
-                            this.radius*2,
-                            this.radius*2
-                        );
+                        ctx.drawImage(game.sprites.ninja, -r, -r, r*2, r*2);
                     ctx.restore();
                 },
 
@@ -276,10 +270,8 @@ Array.prototype.remove = function(from, to) {
                 },
 
                 move: function(dir) {
-                    var strength = 28;
-                    var max_speed = 15;
-                    if(Math.abs(this.body.GetLinearVelocity().get_x()) < max_speed || sign(dir) != sign(this.body.GetLinearVelocity().get_x())) {
-                        this.body.ApplyForceToCenter(new Box2D.b2Vec2(strength * dir, 0.0));
+                    if(Math.abs(this.body.GetLinearVelocity().get_x()) < settings.ninja.move.max_speed || sign(dir) != sign(this.body.GetLinearVelocity().get_x())) {
+                        this.body.ApplyForceToCenter(new Box2D.b2Vec2(settings.ninja.move.strength * dir, 0.0));
                     }
                 },
 
@@ -298,8 +290,8 @@ Array.prototype.remove = function(from, to) {
                     angle += guns[this.gun.type].accuracy * noise.simplex2(game.iteration, 0);
 
                     game.create_bullet(
-                        this.body.GetPosition().get_x() + (Math.cos(angle) * this.radius * 2),
-                        this.body.GetPosition().get_y() + (Math.sin(angle) * this.radius * 2),
+                        this.body.GetPosition().get_x() + (Math.cos(angle) * settings.ninja.body.radius * 2),
+                        this.body.GetPosition().get_y() + (Math.sin(angle) * settings.ninja.body.radius * 2),
                         this.body.GetLinearVelocity().get_x() + (Math.cos(angle) * strength),
                         this.body.GetLinearVelocity().get_y() + (Math.sin(angle) * strength),
                         this.gun.type
@@ -326,11 +318,9 @@ Array.prototype.remove = function(from, to) {
                 },
 
                 jetpack: function() {
-                    var strength = 1;
-                    var max_speed = 15;
-                    if(this.body.GetLinearVelocity().get_y() < max_speed) {
-                        this.body.ApplyLinearImpulse(new Box2D.b2Vec2(0.0, strength));
-                        game.create_particle(this.body.GetPosition().get_x(), this.body.GetPosition().get_y(), (-0.5 + Math.random()) / game.PTM, -0.1 + (-0.5 + Math.random()) / game.PTM, 0);
+                    if(this.body.GetLinearVelocity().get_y() < settings.ninja.jetpack.max_speed) {
+                        this.body.ApplyLinearImpulse(new Box2D.b2Vec2(0.0, settings.ninja.jetpack.strength));
+                        game.create_particle(this.body.GetPosition().get_x(), this.body.GetPosition().get_y(), (-0.5 + Math.random()) / settings.PTM, -0.1 + (-0.5 + Math.random()) / settings.PTM, 0);
                     }
                 }
             };
@@ -452,12 +442,11 @@ Array.prototype.remove = function(from, to) {
                 verts: verts,
                 render_center: render_center,
                 alive: true,
-                color: "#DC3CBF",
 
                 render: function() {
                     var pos = this.body.GetPosition();
-                    ctx.fillStyle = this.color;
-                    ctx.strokeStyle = this.color;
+                    ctx.fillStyle   = settings.colors.asteroid;
+                    ctx.strokeStyle = settings.colors.asteroid;
                     ctx.lineWidth = 0.075;
                     
                     for(var i=0; i<verts.length-1; i++) {
@@ -651,18 +640,18 @@ Array.prototype.remove = function(from, to) {
         },
 
         render: function() {
-            ctx.fillStyle = 'rgb(20, 20, 20)';
-            ctx.fillRect( 0, 0, canvas.width, canvas.height );
+            ctx.fillStyle = settings.colors.background;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             //this.game_offset.x-=0.5;
             
             ctx.save();            
                 ctx.translate(this.game_offset.x + canvas.width/2 - game.mousex, this.game_offset.y + canvas.height / 2 - game.mousey);
                 if(this.ninja != null) {
                     var pos = this.ninja.n.body.GetPosition();
-                    ctx.translate((-pos.get_x()*this.PTM) + (canvas.width / 2), (pos.get_y()*this.PTM) + canvas.height / 2);
+                    ctx.translate((-pos.get_x()*settings.PTM) + (canvas.width / 2), (pos.get_y()*settings.PTM) + canvas.height / 2);
                 }
                 ctx.scale(1, -1);                
-                ctx.scale(this.PTM, this.PTM);
+                ctx.scale(settings.PTM, settings.PTM);
 
                 for(var i in this.particles) {
                     this.particles[i].render();
@@ -702,11 +691,11 @@ Array.prototype.remove = function(from, to) {
             game.mouseDown[e.button] = 1;
 
             if(game.ninja == null) {
-                var id = game.create_ninja(x / game.PTM, -(y / game.PTM));
+                var id = game.create_ninja(x / settings.PTM, -(y / settings.PTM));
                 game.ninja = game.ninja_human_controller(game.ninjas[id]);
 
                 for(var i=0; i<10; ++i) {
-                    game.create_ninja(x / game.PTM + 3*i, -(y / game.PTM));
+                    game.create_ninja(x / settings.PTM + 3*i, -(y / settings.PTM));
                 }
             }
         },
@@ -726,20 +715,20 @@ Array.prototype.remove = function(from, to) {
         keydown: function(e) {
             var key = e.keyCode;
             switch(key) {
-                case 87: game.keyResult |= game.KEY_UP; break;
-                case 65: game.keyResult |= game.KEY_LEFT; break;
-                case 83: game.keyResult |= game.KEY_DOWN; break;
-                case 68: game.keyResult |= game.KEY_RIGHT; break;
+                case settings.controls.key_up:    game.keyResult |= game.KEY_UP;    break;
+                case settings.controls.key_left:  game.keyResult |= game.KEY_LEFT;  break;
+                case settings.controls.key_down:  game.keyResult |= game.KEY_DOWN;  break;
+                case settings.controls.key_right: game.keyResult |= game.KEY_RIGHT; break;
             }
         },
 
         keyup: function(e) {
             var key = e.keyCode;
             switch(key) {
-                case 87: game.keyResult ^= game.KEY_UP; break;
-                case 65: game.keyResult ^= game.KEY_LEFT; break;
-                case 83: game.keyResult ^= game.KEY_DOWN; break;
-                case 68: game.keyResult ^= game.KEY_RIGHT; break;
+                case settings.controls.key_up:    game.keyResult ^= game.KEY_UP;    break;
+                case settings.controls.key_left:  game.keyResult ^= game.KEY_LEFT;  break;
+                case settings.controls.key_down:  game.keyResult ^= game.KEY_DOWN;  break;
+                case settings.controls.key_right: game.keyResult ^= game.KEY_RIGHT; break;
             }
         }
 

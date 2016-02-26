@@ -13,7 +13,7 @@ var guns = [
         lifetime:     240,
         damage:       0.1,
         accuracy:     0.1,
-        color:        "rgb(30, 150, 250)"
+        color:        "rgb(130, 130, 130)"
     },
     {
         name: "grenade launcher",
