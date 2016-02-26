@@ -693,44 +693,11 @@ Array.prototype.remove = function(from, to) {
             if(this.ninja != null) {
                 this.ninja.update();
             }
-
-            if(this.iteration % 30 == 0) {
-                this.bounds_check();
-            }
-        },
-
-        bounds_check: function() {
-            /*
-            for(var i=0; i<this.crates.length; ++i) {
-                if(this.crates[i].body.GetPosition().get_x() + canvas.width < this.game_offset.x) {
-                    this.crates[i].alive = false;
-                }
-            }
-
-            for(var i=0; i<this.bullets.length; ++i) {
-                if(this.bullets[i].body.GetPosition().get_x() + canvas.width < this.game_offset.x) {
-                    this.bullets[i].alive = false;
-                }
-            }
-
-            var destroyed_asteroids = 0;
-            for(var i=0; i<this.asteroids.length; ++i) {
-                if(this.asteroids[i].body.GetPosition().get_x() + canvas.width < this.game_offset.x) {
-                    //this.asteroids[i].alive = false;
-                    destroyed_asteroids++;
-                }
-            }
-
-            for(var i=0; i<destroyed_asteroids; i++) {
-                this.asteroids.push(this.create_asteroid((-this.game_offset.x) - canvas.width/2 + (Math.random() * 10), -10+(Math.random() * 10)));
-            }
-            */
         },
 
         render: function() {
             ctx.fillStyle = settings.colors.background;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            //this.game_offset.x-=0.5;
             
             ctx.save();            
                 ctx.translate(this.game_offset.x + canvas.width/2 - game.mousex, this.game_offset.y + canvas.height / 2 - game.mousey);
