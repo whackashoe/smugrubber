@@ -237,7 +237,7 @@ var game = {
             this.create_crate(x, y+10, 0);
         }
         console.log(" leftBoundary: " + lBound + " rightBoundary: " + rBound + " topBoundary: " + tBound + " botBoundary: " + bBound);
-        this.create_boundaries(lBound, rBound, bBound, tBound);
+        this.create_boundaries(lBound - settings.bound, rBound + (settings.bound * 2), bBound - (settings.bound * 2), tBound + settings.bound);
     },
 
     create_boundaries: function(lB, rB, bB, tB) {
@@ -256,7 +256,7 @@ var game = {
 
                 ctx.strokeStyle="red";
                 ctx.lineWidth="1";
-                ctx.rect(lB - settings.bound,tB + settings.bound,rB + (settings.bound * 2), bB - (settings.bound * 2));
+                ctx.rect(lB,tB,rB, bB);
                 ctx.stroke();
 
             }
@@ -767,7 +767,8 @@ var game = {
 
         for(var i in this.ninjas) {
             var m = this.ninjas[i];
-            this.bounds_check(m);
+            // console.log(m.body);
+            this.bounds_check(m );
             m.update();
 
             if(! m.alive) {
@@ -794,10 +795,20 @@ var game = {
         }
     },
     bounds_check: function(obj) {
-        // console.log(game.boundaries.lB );
+
+        var xPos = obj.body.GetPosition().get_x();
+        var yPos = obj.body.GetPosition().get_y();
+        if (xPos < game.boundaries.lB){ obj.alive = false;}
+        if (xPos > game.boundaries.rB){ obj.alive = false;}
+        if (yPos > game.boundaries.tB){ obj.alive = false;}
+        if (yPos < game.boundaries.bB){ obj.alive = false;}
+        // console.log(obj.GetPosition() );
+            // console.log(game.boundaries.lB );
         // obj.get_x()
-        var pos = obj.n.body.GetPosition();
-        console.log (obj.get_x() );
+        
+        // var pos = obj.GetPosition();
+    
+        // console.log (pos.get_x() );
     },
 
     render: function() {
