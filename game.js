@@ -349,6 +349,7 @@ var game = {
             damage: 0,
             facing_dir: -1,
             touching_ground: false,
+            name: ((Math.random() < 0.5) ? "Dan" : "Jett"),
             gun: {
                 type: gun_type,
                 ammo:         guns[gun_type].ammo,
@@ -366,7 +367,12 @@ var game = {
 
                 ctx.save();
                     ctx.translate(bpos.get_x(), bpos.get_y());
-                    ctx.scale(this.facing_dir, -1);
+                    ctx.scale(1, -1);
+                    ctx.textAlign="center"; 
+                    ctx.fillStyle ='rgb(255, 255, 255)';
+                    ctx.font = '0.65px monospace';
+                    ctx.fillText(this.name + " (" + Math.floor(this.damage*100) + "%)", r, -r*2);
+                    ctx.scale(this.facing_dir, 1);
                     ctx.drawImage(game.sprites.ninja, -r, -r, r*2, r*2);
                 ctx.restore();
             },
@@ -524,9 +530,10 @@ var game = {
             },
             target: game.ninja.n.body,
             update: function() {
-                this.n.facing_dir = this.n.body.GetPosition().get_x() < this.home.x ? 1 : -1;
-                this.n.move(this.n.body.GetPosition().get_x() < this.home.x ? 1 : -1);
-                if(this.n.body.GetPosition().get_y() < this.home.y - 20) {
+                this.n.facing_dir = this.n.body.GetPosition().get_x() <  ((this.home.x + this.target.GetPosition().get_x()) / 2) ? 1 : -1;
+                this.n.move(this.n.facing_dir);
+                var y_cmp = ((this.home.y + this.target.GetPosition().get_y()) / 2) - 10;
+                if(this.n.body.GetPosition().get_y() < y_cmp) {
                     this.n.fire_jetpack();
                 }
 
