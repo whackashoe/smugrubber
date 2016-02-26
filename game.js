@@ -96,9 +96,6 @@ Array.prototype.remove = function(from, to) {
                 var angleAB = Math.atan2(pyB - pyA, pxB - pxA);
                 var angleBA = angleAB + Math.PI;
 
-                var mA = bA.GetMass();
-                var mB = bB.GetMass();
-
                 var vxA = bA.GetLinearVelocity().get_x();
                 var vyA = bA.GetLinearVelocity().get_y();
                 var vxB = bB.GetLinearVelocity().get_x();
@@ -129,7 +126,8 @@ Array.prototype.remove = function(from, to) {
                     bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angle) * f * d, Math.sin(angle) * f * d));
 
                     ninja.damage += f;
-                    bullet.alive = false;
+
+                    ninja.get_shot(bullet);
                 }
 
                 function asteroid_ninja(ninja_ud) {
@@ -137,6 +135,28 @@ Array.prototype.remove = function(from, to) {
 
                     if(impactForce > settings.collide.ninja_to_asteroid_min) {
                         ninja.damage += impactForce * settings.collide.ninja_to_asteroid_mult;
+                    }
+                }
+
+                function asteroid_bullet(asteroid_ud, bullet_ud) {
+                    var bullet = game.bullets[bullet_ud];
+                    var asteroid = game.asteroids[asteroid_ud];
+
+                    bullet.alive = false;
+                }
+
+                function crate_ninja(crate_ud, ninja_ud) {
+                    var crate = game.crates[crate_ud];
+                    var ninja = game.ninjas[ninja_ud];
+
+                    var f = impactForce * crate.body.GetMass() * crates[crate.crate.type].damage;
+                    var d = ninja.damage;
+
+                    if(f > crates[crate.crate.type].min_dforce) {
+                        ninja.damage += f * settings.collide.ninja_to_crate_mult
+                        bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angle) * f * d, Math.sin(angle) * f * d));
+                    } else {
+                        ninja.pickup_crate(crate);
                     }
                 }
 
@@ -154,6 +174,14 @@ Array.prototype.remove = function(from, to) {
 
                 if(tA == 'asteroid' && tB == 'ninja') {
                     asteroid_ninja(udB);
+                }
+
+                if(tA == 'ninja' && tB == 'crate') {
+                    crate_ninja(udB, udA);
+                }
+
+                if(tA == 'crate' && tB == 'ninja') {
+                    crate_ninja(udA, udB);
                 }
             };
 
@@ -227,6 +255,10 @@ Array.prototype.remove = function(from, to) {
                 },
 
                 update: function() {
+                    if(! this.alive) {
+                        return;
+                    }
+
                     this.alive = --this.lifetime > 0;
                 }
             };
@@ -343,6 +375,20 @@ Array.prototype.remove = function(from, to) {
                         this.body.ApplyLinearImpulse(new Box2D.b2Vec2(0.0, settings.ninja.jetpack.strength));
                         game.create_particle(this.body.GetPosition().get_x(), this.body.GetPosition().get_y(), (-0.5 + Math.random()) / settings.PTM, -0.1 + (-0.5 + Math.random()) / settings.PTM, 0);
                     }
+                },
+
+                pickup_crate: function(crate) {
+                    if(! crate.alive) {
+                        return;
+                    }
+
+                    crate.alive = false;
+                    console.log("pickup");
+                },
+
+                get_shot: function(bullet) {
+                    bullet.alive = false;
+                    console.log("get shot");
                 }
             };
 

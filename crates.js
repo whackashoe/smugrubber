@@ -6,7 +6,9 @@ var crates = [
         density:      1.0,
         friction:     1.0,
         restitution:  0.2,
-        color:        "rgb(180, 20, 90)"
+        color:        "rgb(180, 20, 90)",
+        damage:       0,
+        min_dforce:   10,
     }
 ];
 
