@@ -123,9 +123,11 @@ Array.prototype.remove = function(from, to) {
                     var f = impactForce * gd * bullet.body.GetMass();
                     var d = ninja.damage;
 
-                    bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angle) * f * d, Math.sin(angle) * f * d));
+                    var impulse = f * d * settings.collide.ninja_to_bullet_mult_f;
 
-                    ninja.damage += f;
+                    bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angle) * impulse, Math.sin(angle) * impulse));
+
+                    ninja.damage += f * settings.collide.ninja_to_bullet_mult;
 
                     ninja.get_shot(bullet);
                 }
