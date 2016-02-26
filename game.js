@@ -241,32 +241,16 @@ var game = {
 
     create_boundaries: function(lB, rB, bB, tB) {
         game.boundaries[id] = {
-            // body: body,
-            // verts: verts,
-            // render_center: render_center,
-            // alive: true,
+
             render: function() {
                 var boundCenterX = (rB - lB) / 2;
                 var boundCenterY = (bB + tB) / 2;
-                // var bound = new Box2D.b2BodyDef();
-                // bound.set_type(Box2D.b2_staticBody);
-                // bound.set_position( new Box2D.b2Vec2(boundCenterX, boundCenterY) );
 
-                // var body = this.world.CreateBody(bound);
                 ctx.strokeStyle="red";
                 ctx.lineWidth="1";
-                // ctx.rect(lB,tB,Math.abs(rB),Math.abs(bB));
-                // ctx.rect(lB,Math.abs(tB),rB,Math.abs(bB));
-                ctx.rect(lB,tB,rB,bB);
-
-                // ctx.rect(lB * settings.PTM, tB * settings.PTM, Math.abs(rB * settings.PTM), Math.abs(bB * settings.PTM));
+                ctx.rect(lB - settings.bound,tB + settings.bound,rB + (settings.bound * 2), bB - (settings.bound * 2));
                 ctx.stroke();
-                // var pos = this.body.GetPosition();
-                // ctx.beginPath();
-                // ctx.arc(pos.get_x(), pos.get_y(), this.radius, 0, 2*Math.PI);
-                // ctx.fillStyle = guns[this.gun_type].color;
-                // ctx.fill();
-                // ctx.closePath();
+
             }
 
         };

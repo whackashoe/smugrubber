@@ -1,5 +1,6 @@
 var settings = {
     PTM: 16, /* pixels to meters */
+    bound: -50,
     controls: {
         key_up:    87,
         key_left:  65,
@@ -17,9 +18,9 @@ var settings = {
             max_speed: 15
         },
         jetpack: {
-            strength:     1,
+            strength:     2,
             max_speed:    15,
-            max_ammo:     100,
+            max_ammo:     1000,
             reload_rate:  0.2
         },
         body: {
