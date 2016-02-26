@@ -152,12 +152,13 @@ Array.prototype.remove = function(from, to) {
 
             this.sprites.ninja = new Image();
             this.sprites.ninja.src = 'ninja.png';
-            for(var i=0; i<50; i++) {
-                var x = i*10 + (Math.random() * 10);
-                var y = -60+(Math.random() * 60);
-                this.create_asteroid(x, y);
-                this.create_crate(x, y+10, 0);
-            }
+            this.create_asteroid(100, 100);
+            // for(var i=0; i<50; i++) {
+            //     var x = i*10 + (Math.random() * 10);
+            //     var y = -60+(Math.random() * 60);
+            //     this.create_asteroid(x, y);
+            //     this.create_crate(x, y+10, 0);
+            // }
         },
 
         add_user_data: function(data) {
