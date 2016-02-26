@@ -107,8 +107,10 @@ Array.prototype.remove = function(from, to) {
                 var vdx = vxA - vxB;
                 var vdy = vyA - vyB;
 
+                var impactForce = Math.abs(vdx) + Math.abs(vdy);
+
                 if(tA == 'ninja' && tB == 'ninja') {
-                    var f = settings.collide.ninja_to_ninja_base + Math.abs(vdx) + Math.abs(vdy);
+                    var f = settings.collide.ninja_to_ninja_base + impactForce;
                     var dA = game.ninjas[udA].damage;
                     var dB = game.ninjas[udA].damage;
                     bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angleAB) * f * dA, Math.sin(angleAB) * f * dA));
@@ -116,24 +118,43 @@ Array.prototype.remove = function(from, to) {
                 }
 
 
-                if(tA == 'ninja' && tB == 'bullet') {
-                    var gd = guns[game.bullets[udB].gun_type].damage;
-                    var f = (Math.abs(vdx) + Math.abs(vdy)) * gd * mA;
-                    var d = game.ninjas[udA].damage;
-                    bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angleBA) * f * d, Math.sin(angleBA) * f * d));
+                function bullet_ninja(bullet_ud, ninja_ud, angle) {
+                    var bullet = game.bullets[bullet_ud];
+                    var ninja = game.ninjas[ninja_ud];
 
-                    game.ninjas[udA].damage += f/100.0;
-                    game.bullets[udB].alive = false;
+                    var gd = guns[bullet.gun_type].damage;
+                    var f = impactForce * gd * bullet.body.GetMass();
+                    var d = ninja.damage;
+
+                    bA.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angle) * f * d, Math.sin(angle) * f * d));
+
+                    ninja.damage += f;
+                    bullet.alive = false;
+                }
+
+                function asteroid_ninja(ninja_ud) {
+                    var ninja = game.ninjas[ninja_ud];
+
+                    if(impactForce > settings.collide.ninja_to_asteroid_min) {
+                        console.log(impactForce);
+                        ninja.damage += impactForce * settings.collide.ninja_to_asteroid_mult;
+                    }
+                }
+
+                if(tA == 'ninja' && tB == 'bullet') {
+                    bullet_ninja(udB, udA, angleBA);
                 }
 
                 if(tA == 'bullet' && tB == 'ninja') {
-                    var gd = guns[game.bullets[udA].gun_type].damage;
-                    var f = (Math.abs(vdx) + Math.abs(vdy)) * gd * mA;
-                    var d = game.ninjas[udB].damage;
-                    bB.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(angleAB) * f * d, Math.sin(angleAB) * f * d));
+                    bullet_ninja(udA, udB, angleAB);
+                }
 
-                    game.ninjas[udB].damage += f/100.0;
-                    game.bullets[udA].alive = false;
+                if(tA == 'ninja' && tB == 'asteroid') {
+                    asteroid_ninja(udA);
+                }
+
+                if(tA == 'asteroid' && tB == 'ninja') {
+                    asteroid_ninja(udB);
                 }
             };
 
@@ -241,6 +262,7 @@ Array.prototype.remove = function(from, to) {
                 alive: true,
                 damage: 0,
                 facing_dir: -1,
+                touching_ground: false,
                 gun: {
                     type: gun_type,
                     ammo:         guns[gun_type].ammo,

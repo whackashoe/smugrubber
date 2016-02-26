@@ -27,6 +27,8 @@ var settings = {
         }
     },
     collide: {
-        ninja_to_ninja_base: 20
+        ninja_to_ninja_base:    20,
+        ninja_to_asteroid_min:  45,
+        ninja_to_asteroid_mult: 0.01
     },
 };
