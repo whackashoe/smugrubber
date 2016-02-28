@@ -11,7 +11,7 @@ var guns = [
         ammo:         12,
         reloadtime:   100,
         lifetime:     240,
-        damage:       0.1,
+        damage:       0.4,
         accuracy:     0.01,
         color:        "rgb(180, 130, 130)"
     },
@@ -75,8 +75,8 @@ var guns = [
         ammo:         30,
         reloadtime:   80,
         lifetime:     240,
-        damage:       0.1,
+        damage:       0.15,
         accuracy:     0.1,
-        color:        "rgb(20, 200, 90)"
+        color:        "rgb(20, 70, 200)"
     }
 ];

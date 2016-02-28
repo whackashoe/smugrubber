@@ -1,10 +1,10 @@
 var settings = {
     PTM: 24, /* pixels to meters */
     bounds: {
-        top:    100,
+        top:    125,
         bottom: 100,
-        left:   100,
-        right:  100,
+        left:   300,
+        right:  300,
         color:  'rgb(255, 0, 0)',
         line_w:  1
     },
@@ -21,7 +21,7 @@ var settings = {
         asteroid: 'rgb(220, 60, 191)'
     },
     ninja: {
-        max_damage: 10000,
+        max_damage: 20,
         move: {
             strength: 28,
             max_speed: 15
@@ -58,13 +58,29 @@ var settings = {
         ninja_to_crate_mult:     0.01,
         ninja_to_crate_mult_f:   0.01,
         ninja_to_crate_max_d:    500,
-        ninja_to_bullet_mult:    0.5,
-        ninja_to_bullet_mult_f:  50.0,
+        ninja_to_bullet_mult:    0.1,
+        ninja_to_bullet_mult_f:  25.0,
         ninja_to_bullet_max_d:   50.0
     },
     spawnpoint: {
         color: 'rgb(26, 32, 60)',
         radius: 3,
         ninja_delay: 240
+    },
+    map: {
+        asteroids:       100,
+        place_x_mult:    3,
+        place_x_rand:    10,
+        place_x_offset:  0,
+        place_y_mult:    0,
+        place_y_rand:    60,
+        place_y_offset: -60
+    },
+    bots: {
+        amount: 10,
+        target: "you", //either all or you
+        target_switch_nsec: 5,
+        jump_nsec: 5,
+        max_follow_d: 20
     }
 };

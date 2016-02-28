@@ -1,3 +1,7 @@
+var rng_seed = "" + Math.floor(Math.random() * 1000000);
+console.log("rng_seed: " + rng_seed);
+
+
 // Array Remove - By John Resig (MIT Licensed)
 Array.prototype.remove = function(from, to) {
   var rest = this.slice((to || from) + 1 || this.length);
@@ -46,6 +50,7 @@ var game = {
     asteroids_created: 0,
     mouseDown: [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ninja: null,
+    camninja: null,
     ninja_ais: [],
     mouseangle: 0.0,
     mousex: 0,
@@ -56,11 +61,12 @@ var game = {
     KEY_LEFT : 8,
     KEY_TOSS : 16,
     keyResult: 0,
+    in_main_menu: true,
 
     init: function() {
-        canvas.onmousedown = this.mousedown;
-        canvas.onmouseup   = this.mouseup;
-        canvas.onmousemove = this.mousemove;
+        document.onmousedown = this.mousedown;
+        document.onmouseup   = this.mouseup;
+        document.onmousemove = this.mousemove;
         document.oncontextmenu = this.rightclick;
         document.onkeydown   = this.keydown;
         document.onkeyup     = this.keyup;
@@ -170,6 +176,8 @@ var game = {
                 if(impactForce > settings.collide.ninja_to_asteroid_min) {
                     ninja.damage += impactForce * settings.collide.ninja_to_asteroid_mult;
                 }
+
+                ninja.touching_ground = true;
             }
             
             function crate_ninja(crate_ud, ninja_ud, angle) {
@@ -235,6 +243,48 @@ var game = {
             var udA = contact.GetFixtureA().GetUserData();
             var udB = contact.GetFixtureB().GetUserData();
 
+            if(udA == 0 || udB == 0) {
+                console.log("unknown");
+                return;
+            }
+
+            var tA = game.user_data[udA].type;
+            var tB = game.user_data[udB].type;
+
+            if((tA == 'bullet'   && tB == 'bullet')
+            || (tA == 'asteroid' && tB == 'asteroid')
+            || (tA == 'crate'    && tB == 'crate')
+            || (tA == 'crate'    && tB == 'asteroid')
+            || (tA == 'asteroid' && tB == 'crate')) {
+                return;
+            }
+
+            var bA, bB; //body
+            if(tA == 'bullet')   { bA = game.bullets[udA].body; }
+            if(tA == 'asteroid') { bA = game.asteroids[udA].body; }
+            if(tA == 'crate')    { bA = game.crates[udA].body; }
+            if(tA == 'ninja')    { bA = game.ninjas[udA].body; }
+            
+            if(tB == 'bullet')   { bB = game.bullets[udB].body; }
+            if(tB == 'asteroid') { bB = game.asteroids[udB].body; }
+            if(tB == 'crate')    { bB = game.crates[udB].body; }
+            if(tB == 'ninja')    { bB = game.ninjas[udB].body; }
+            
+
+
+            function asteroid_ninja(ninja_ud) {
+                var ninja = game.ninjas[ninja_ud];
+                ninja.touching_ground = false;
+            }
+
+            if(tA == 'ninja' && tB == 'asteroid') {
+                asteroid_ninja(udA);
+            }
+
+            if(tA == 'asteroid' && tB == 'ninja') {
+                asteroid_ninja(udB);
+            }
+
         };
 
         // Empty implementations for unused methods.
@@ -250,9 +300,10 @@ var game = {
 
 
         var bounds = { left: 0, right: 0, top: 0, bottom: 0 };
-        for(var i=0; i<50; i++) {
-            var x = i*10 + (Math.random() * 10);
-            var y = -60+(Math.random() * 60);
+
+        for(var i=0; i<settings.map.asteroids; i++) {
+            var x = settings.map.place_x_offset + (i*settings.map.place_x_mult) + (Math.random() * settings.map.place_x_rand);
+            var y = settings.map.place_y_offset + (i*settings.map.place_y_mult) + (Math.random() * settings.map.place_y_rand);
 
             if (x < bounds.left)   { bounds.left   = x; }
             if (x > bounds.right)  { bounds.right  = x; }
@@ -284,19 +335,13 @@ var game = {
             }
         };
         
-        // load me
-        {
-            var id = game.create_ninja();
-            var s = game.random_spawn_point();
-            game.ninjas[id].spawn(s.x, s.y);
-            game.ninja = game.ninja_human_controller(game.ninjas[id]);
-        }
         // load bots
-        for(var i=0; i<20; ++i) {
+        for(var i=0; i<settings.bots.amount; ++i) {
             var id = game.create_ninja();
             var s = game.random_spawn_point();
             game.ninjas[id].spawn(s.x, s.y);
             game.ninja_ais.push(game.ninja_ai_controller(game.ninjas[id]));
+            game.camninja = game.ninjas[id];
         }
     },
 
@@ -331,6 +376,10 @@ var game = {
     random_spawn_point: function() {
         var keys = Object.keys(game.spawnpoints)
         return game.spawnpoints[keys[ keys.length * Math.random() << 0]];
+    },
+
+    body_distance(a, b) {
+        return dist(a.GetPosition().get_x(), a.GetPosition().get_y(), b.GetPosition().get_x(), b.GetPosition().get_y());
     },
 
     create_spawnpoint: function(x, y) {
@@ -411,6 +460,9 @@ var game = {
             gun_angle: 0.0,
             touching_ground: false,
             respawn_counter: 0,
+            animation: {
+
+            },
             name: ((Math.random() < 0.5) ? "Dan" : "Jett"),
 
             spawn: function(x, y) {
@@ -575,8 +627,7 @@ var game = {
                 //todo fix contact detect
                 //maybe just need to loop thru clist?
                 var strength = 15;
-                var contact = this.body.GetContactList().get_contact().IsTouching();
-                if(contact) {
+                if(this.touching_ground) {
                     this.body.ApplyLinearImpulse(new Box2D.b2Vec2(0.0, strength));
                     this.body.SetAngularVelocity(0.0);
                 }
@@ -714,18 +765,42 @@ var game = {
                 x: ninja.body.GetPosition().get_x(),
                 y: ninja.body.GetPosition().get_y()
             },
-            target: game.ninja.n.body,
+            target: null,
             update: function() {
-                this.n.facing_dir = this.n.body.GetPosition().get_x() <  ((this.home.x + this.target.GetPosition().get_x()) / 2) ? 1 : -1;
+                if(this.target == null ||
+                    (
+                        settings.bots.target == "random" && (
+                            !  this.target.alive
+                            ||  Math.random() < 1.0 / (settings.bots.target_switch_nsec * 60)
+                            || game.body_distance(this.n.body, this.target.body) > settings.bots.max_follow_d
+                        )
+                    )
+                ) {
+                    var tries = 0;
+                    do {
+                        var keys = Object.keys(game.ninjas)
+                        this.target = game.ninjas[keys[ keys.length * Math.random() << 0]];
+                    } while(! this.target.alive && tries < 5);
+                }
+
+                if(settings.bots.target == "you" && game.ninja != null) {
+                    this.target = game.ninja.n;
+                }
+
+                this.n.facing_dir = this.n.body.GetPosition().get_x() <  ((this.home.x + this.target.body.GetPosition().get_x()) / 2) ? 1 : -1;
                 this.n.move(this.n.facing_dir);
-                var y_cmp = ((this.home.y + this.target.GetPosition().get_y()) / 2) - 10;
+                var y_cmp = ((this.home.y + this.target.body.GetPosition().get_y()) / 2) - 10;
                 if(this.n.body.GetPosition().get_y() < y_cmp) {
                     this.n.fire_jetpack();
                 }
 
+                if(Math.random() < 1.0 / (settings.bots.jump_nsec * 60)) {
+                    this.n.jump();
+                }
+
                 var angle = Math.atan2(
-                    this.target.GetPosition().get_y() -this.n.body.GetPosition().get_y(),
-                    this.target.GetPosition().get_x() -this.n.body.GetPosition().get_x()
+                    this.target.body.GetPosition().get_y() -this.n.body.GetPosition().get_y(),
+                    this.target.body.GetPosition().get_x() -this.n.body.GetPosition().get_x()
                 );
 
                 this.n.shoot(angle);
@@ -1014,11 +1089,11 @@ var game = {
         
         ctx.save();            
             ctx.translate(game.game_offset.x + canvas.width/2 - game.mousex, game.game_offset.y + canvas.height / 2 - game.mousey);
-            if(game.ninja != null) {
-                var pos = game.ninja.n.body.GetPosition();
+            if(game.camninja != null) {
+                var pos = game.camninja.body.GetPosition();
                 ctx.translate((-pos.get_x()*settings.PTM) + (canvas.width / 2), (pos.get_y()*settings.PTM) + canvas.height / 2);
 
-                ctx.rotate(map(game.ninja.n.body.GetLinearVelocity().get_x(), -20, 20, -0.005, 0.005));
+                ctx.rotate(map(game.camninja.body.GetLinearVelocity().get_x(), -20, 20, -0.005, 0.005));
             }
             ctx.scale(1, -1);                
             ctx.scale(settings.PTM, settings.PTM);
@@ -1090,12 +1165,14 @@ var game = {
     },
 
     mousedown: function(e) {
-        var x = event.pageX;
-        var y = event.pageY;
         game.mouseDown[e.button] = 1;
     },
 
     mouseup: function(e) {
+        if(game.in_main_menu) {
+            game.main_menu_click();
+        }
+
         --game.mouseDown[e.button];
     },
 
@@ -1127,6 +1204,18 @@ var game = {
             case settings.controls.key_right: game.keyResult ^= game.KEY_RIGHT; break;
             case settings.controls.key_toss:  game.keyResult ^= game.KEY_TOSS;  break;
         }
+    },
+
+    main_menu_click: function() {
+        if(game.ninja == null) {
+            var id = game.create_ninja();
+            var s = game.random_spawn_point();
+            game.ninjas[id].spawn(s.x, s.y);
+            game.ninja = game.ninja_human_controller(game.ninjas[id]);
+            game.camninja = game.ninjas[id];
+        }
+
+        $('#overlay').fadeOut(100);
     }
 
 };
