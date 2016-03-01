@@ -1,5 +1,9 @@
 var settings = {
     PTM: 24, /* pixels to meters */
+    victoryCondition:{
+        stock: false, // Game restarts after lives from settings.ninja.stock are gone
+        lastMan: false, // Each death adds respawn time, ends the second  only one player is left alive
+    },
     bounds: {
         top:    125,
         bottom: 100,
@@ -18,10 +22,11 @@ var settings = {
     },
     colors: {
         background: 'rgb(20, 20, 20)',
-        asteroid: 'rgb(220, 60, 191)'
+        asteroid: 'rgb(88, 53, 53)'
     },
     ninja: {
         max_damage: 20,
+        stock: 2,
         move: {
             strength: 28,
             max_speed: 15
@@ -30,20 +35,20 @@ var settings = {
             strength:     1.2,
             max_speed:    15,
             max_ammo:     100,
-            reload_rate:  0.2
+            reload_rate:  0.32
         },
         body: {
             radius: 0.75,
             density: 1.0,
             friction: 0.1,
-            restitution: 0.2
+            restitution: 0.02
         },
         toss: {
             force_mult: 15
         }
     },
     crates: {
-        health_restore: 2.0,
+        health_restore: 5.0,
         jet_fuel:       1000
     },
     collide: {
@@ -77,7 +82,7 @@ var settings = {
         place_y_offset: -60
     },
     bots: {
-        amount: 10,
+        amount: 1,
         target: "you", //either all or you
         target_switch_nsec: 5,
         jump_nsec: 5,

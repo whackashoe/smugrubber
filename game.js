@@ -62,6 +62,7 @@ var game = {
     KEY_TOSS : 16,
     keyResult: 0,
     in_main_menu: true,
+    RESTART: false,
 
     init: function() {
         document.onmousedown = this.mousedown;
@@ -456,6 +457,8 @@ var game = {
         game.ninjas[id] = {
             body: null,
             alive: true,
+            stock: settings.ninja.stock,
+            deaths: 0,
             facing_dir: -1,
             gun_angle: 0.0,
             touching_ground: false,
@@ -537,9 +540,15 @@ var game = {
                 if(! this.alive) {
                     if(this.respawn_counter > 0) {
                         this.respawn_counter--;
-                        if(this.respawn_counter == 0) {
-                            var s = game.random_spawn_point();
-                            this.spawn(s.x, s.y);
+                        // if(this.respawn_counter == 0 && this.stock > 0) {
+                        if(this.respawn_counter == 0){
+                            if(settings.victoryCondition.stock && this.stock < 1){
+                                console.log("Figure out how to delete the character");
+                                this.respawn_counter = 10000;
+                            }else{
+                                var s = game.random_spawn_point();
+                                this.spawn(s.x, s.y); 
+                            }
                         }
                     }
 
@@ -1043,17 +1052,50 @@ var game = {
             }
         }
 
+        var lastManVictoryCheck = 0; 
+        var stockVictoryCheck = 1;
+        var guyCount = 0;
         for(var i in this.ninjas) {
+            guyCount++;
             var m = this.ninjas[i];
             m.update();
 
-            if(! this.bounds_check(m.body)) {
-                m.alive = false;
-            }
+            // I was trying to get this damage watcher integrated into bounds_check, but I couldnt figure out how to use the object properly
+            if((! this.bounds_check(m.body)) || (m.damage >= settings.ninja.max_damage)) m.alive = false;
+            
 
+            
             if(! m.alive && m.respawn_counter == 0) {
-                m.respawn_counter = settings.spawnpoint.ninja_delay;
+                var delayMod = 1;
+                
+                if (settings.victoryCondition.lastMan){
+                    m.deaths++;
+                    console.log("ninja death: " + m.deaths);
+                    delayMod = m.deaths * (m.deaths / 2);
+                }
+                
+                
+                if (settings.victoryCondition.stock){
+                    m.stock--;
+                    console.log("stock: " + m.stock);
+                }
+                m.respawn_counter = settings.spawnpoint.ninja_delay * delayMod;
             }
+            // && (this.ninjas.length > 1))
+            if (settings.victoryCondition.stock &&  m.stock > 1){
+                stockVictoryCheck++;
+            }
+            if (settings.victoryCondition.lastMan && m.alive){
+                lastManVictoryCheck++;
+            }
+        }
+        if (settings.victoryCondition.lastMan && (lastManVictoryCheck <= 1) && (guyCount > 1)){
+            console.log("LAST MAN VICTORY MET! RESTARTING!");
+            this.victory();
+        }
+        if ((settings.victoryCondition.stock) && (stockVictoryCheck <= 1) && (guyCount > 1)){
+            console.log("STOCK VICTORY MET! RESTARTING!");
+            this.victory();
         }
 
         for(var i in this.particles) {
@@ -1073,13 +1115,17 @@ var game = {
             this.ninja_ais[i].update();
         }
     },
-
+    victory: function(){
+        game.RESTART = true;
+        // wipe game
+        // re-initialize game
+        // game.init();
+    },
     bounds_check: function(body) {
-        if(body.GetPosition().get_x() < game.boundary.left)   { return false;}
-        if(body.GetPosition().get_x() > game.boundary.right)  { return false;}
-        if(body.GetPosition().get_y() > game.boundary.top)    { return false;}
-        if(body.GetPosition().get_y() < game.boundary.bottom) { return false;}
-
+        if(body.GetPosition().get_x() < game.boundary.left)    return false;
+        if(body.GetPosition().get_x() > game.boundary.right)   return false;
+        if(body.GetPosition().get_y() > game.boundary.top)     return false;
+        if(body.GetPosition().get_y() < game.boundary.bottom)  return false;
         return true;
     },
 
@@ -1151,6 +1197,10 @@ var game = {
                     ctx.fillText(gun_text, 200, hud_height * 0.8);
 
                     ctx.fillText("jetpack: " + Math.floor(Math.max(0, game.ninja.n.jetpack.ammo)) + "/" + settings.ninja.jetpack.max_ammo, 700, hud_height * 0.8);
+
+                    if(settings.victoryCondition.stock){
+                        ctx.fillText("Stock: " + game.ninja.n.stock, 550, hud_height * 0.8);
+                    }
 
                     ctx.fillText("vx: " + Math.ceil(game.ninja.n.body.GetLinearVelocity().get_x()) + " vy: " + Math.ceil(game.ninja.n.body.GetLinearVelocity().get_y()), 1200, hud_height * 0.8);
                 } else {
