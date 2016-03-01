@@ -456,6 +456,7 @@ var game = {
         game.ninjas[id] = {
             body: null,
             alive: true,
+            stock: settings.ninja.stock,
             facing_dir: -1,
             gun_angle: 0.0,
             touching_ground: false,
@@ -1047,12 +1048,23 @@ var game = {
             var m = this.ninjas[i];
             m.update();
 
-            if(! this.bounds_check(m.body)) {
+            if((! this.bounds_check(m.body))) {
                 m.alive = false;
+                // console.log("a death");
             }
-
+            // I was trying to get this damage watcher integrated into bounds_check, but I couldnt figure out how to use the object properly
+            if (m.damage >= settings.ninja.max_damage){
+                m.alive = false;
+                // console.log("a death");
+            }
+            
             if(! m.alive && m.respawn_counter == 0) {
-                m.respawn_counter = settings.spawnpoint.ninja_delay;
+                // m.stock--;
+                // if (m.stock > 0){
+                    m.respawn_counter = settings.spawnpoint.ninja_delay;
+                // }else{
+                    // console.log("Wait for players to die before game restarts?");
+                // }
             }
         }
 
@@ -1079,7 +1091,7 @@ var game = {
         if(body.GetPosition().get_x() > game.boundary.right)  { return false;}
         if(body.GetPosition().get_y() > game.boundary.top)    { return false;}
         if(body.GetPosition().get_y() < game.boundary.bottom) { return false;}
-
+        // if(body.damage == settings.max_damage)                { return false;}
         return true;
     },
 

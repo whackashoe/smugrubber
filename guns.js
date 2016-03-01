@@ -34,7 +34,7 @@ var guns = [
     {
         name: "grenade launcher",
         strength:     20.0,
-        radius:       0.15,
+        radius:       0.25,
         density:      1.0,
         friction:     1.0,
         restitution:  0.2,
