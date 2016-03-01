@@ -1,5 +1,9 @@
 var settings = {
     PTM: 24, /* pixels to meters */
+    victoryCondition:{
+        stock: true, // Game restarts after lives from settings.ninja.stock are gone
+        lastMan: true, // Each death adds respawn time, ends the second  only one player is left alive
+    },
     bounds: {
         top:    125,
         bottom: 100,
@@ -22,7 +26,7 @@ var settings = {
     },
     ninja: {
         max_damage: 20,
-        stock: 5,
+        stock: 2,
         move: {
             strength: 28,
             max_speed: 15
@@ -78,7 +82,7 @@ var settings = {
         place_y_offset: -60
     },
     bots: {
-        amount: 10,
+        amount: 1,
         target: "you", //either all or you
         target_switch_nsec: 5,
         jump_nsec: 5,
