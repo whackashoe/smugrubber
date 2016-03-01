@@ -1,6 +1,7 @@
 var guns = [
     {
         name: "rifle",
+        src: "sprites/gun.png",
         strength:     55.0,
         radius:       0.15,
         density:      1.0,
@@ -17,6 +18,7 @@ var guns = [
     },
     {
         name: "tommy gun",
+        src: "sprites/tommy.png",
         strength:     45.0,
         radius:       0.15,
         density:      1.0,
@@ -33,6 +35,7 @@ var guns = [
     },
     {
         name: "grenade launcher",
+        src: "sprites/nade.png",
         strength:     20.0,
         radius:       0.25,
         density:      1.0,
@@ -49,6 +52,7 @@ var guns = [
     },
     {
         name: "sniper",
+        src: "sprites/sniper.png",
         strength:     80.0,
         radius:       0.15,
         density:      1.0,
@@ -65,6 +69,7 @@ var guns = [
     },
     {
         name: "machine gun",
+        src: "sprites/machine.png",
         strength:     40.0,
         radius:       0.15,
         density:      1.0,
