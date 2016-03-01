@@ -1182,21 +1182,18 @@ var game = {
 
                 if(game.ninja.n.alive) {
                     ctx.fillText(Math.floor(game.ninja.n.damage * 100) + "%", 10, hud_height * 0.9);
-                    // this.sprites.gun = new Image();
-                    // this.sprites.gun.src = 'sprites/gun.png';
-                    // this.sprites.hudGun = new Image();
-                    // this.sprites.hudGun.src = 'sprites/gun.png';
+
                     // var gun_text = guns[game.ninja.n.gun.type].name + ": ";
-                    var gun_text = ": ";
+                    var gun_text = "";
 
                     hudGun = new Image();
                     hudGun.src = game.ninja.n.gun.src;
-                    ctx.drawImage(hudGun, 200, hud_height * 0.6);
+                    ctx.drawImage(hudGun, 100, hud_height * 0.4);
 
                     if(game.ninja.n.gun.reloadtime > 0) {
                         gun_text += "reloading (" + game.ninja.n.gun.reloadtime + ")";
                     } else {
-                        gun_text += ": " + game.ninja.n.gun.ammo + "/" + guns[game.ninja.n.gun.type].ammo;
+                        gun_text += "" + game.ninja.n.gun.ammo + "/" + guns[game.ninja.n.gun.type].ammo;
 
                         if(game.ninja.n.gun.fireinterval > 0) {
                             gun_text += " (" + game.ninja.n.gun.fireinterval + ")";
