@@ -1,4 +1,4 @@
-var rng_seed = "" + Math.floor(Math.random() * 1000000);
+var rng_seed = "" + 1000; //Math.floor(Math.random() * 1000000);
 console.log("rng_seed: " + rng_seed);
 
 
@@ -10,7 +10,7 @@ Array.prototype.remove = function(from, to) {
 };
 
 var canvas    = document.getElementById("canvas");
-var ctx       = canvas.getContext("2d");
+//var ctx       = canvas.getContext("2d");
 canvas.width  = document.documentElement.clientWidth;
 canvas.height = document.documentElement.clientHeight;
 
@@ -33,6 +33,172 @@ function map(value, istart, istop, ostart, ostop) {
 
 function sign(x) { return x ? x < 0 ? -1 : 1 : 0; }
 
+var gl;
+
+function initGL(canvas) {
+    try {
+        gl = canvas.getContext("webgl");
+        gl.viewportWidth = canvas.width;
+        gl.viewportHeight = canvas.height;
+    } catch (e) {
+    }
+    if (!gl) {
+        alert("Could not initialise WebGL, sorry :-(");
+    }
+}
+
+
+function getShader(gl, id) {
+    var shaderScript = document.getElementById(id);
+    if (!shaderScript) {
+        return null;
+    }
+
+    var str = "";
+    var k = shaderScript.firstChild;
+    while (k) {
+        if (k.nodeType == 3) {
+            str += k.textContent;
+        }
+        k = k.nextSibling;
+    }
+
+    var shader;
+    if (shaderScript.type == "x-shader/x-fragment") {
+        shader = gl.createShader(gl.FRAGMENT_SHADER);
+    } else if (shaderScript.type == "x-shader/x-vertex") {
+        shader = gl.createShader(gl.VERTEX_SHADER);
+    } else {
+        return null;
+    }
+
+    gl.shaderSource(shader, str);
+    gl.compileShader(shader);
+
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        alert(gl.getShaderInfoLog(shader));
+        return null;
+    }
+
+    return shader;
+}
+
+
+var shaderProgram;
+
+function initShaders() {
+    var fragmentShader = getShader(gl, "shader-fs");
+    var vertexShader = getShader(gl, "shader-vs");
+
+    shaderProgram = gl.createProgram();
+    gl.attachShader(shaderProgram, vertexShader);
+    gl.attachShader(shaderProgram, fragmentShader);
+    gl.linkProgram(shaderProgram);
+
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        alert("Could not initialise shaders");
+    }
+
+    gl.useProgram(shaderProgram);
+
+    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+
+    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
+    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
+
+    shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+    shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+}
+
+
+var mvMatrix = mat4.create();
+var pMatrix = mat4.create();
+
+function setMatrixUniforms() {
+    gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
+    gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+}
+
+
+var asteroidVertPosBuffer;
+var asteroidVertColBuffer;
+
+function initBuffers() {
+    asteroidVertPosBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, asteroidVertPosBuffer);
+    var vertices = [];
+
+    var scale = 0.01;//1.0 / settings.PTM;
+    for(var i in game.asteroids) {
+        var m = game.asteroids[i];
+        var pos = m.body.GetPosition();
+
+        for(var i=0; i<m.verts.length-1; i++) {
+            vertices.push((pos.get_x() + m.render_center.x)    * scale, (pos.get_y() + m.render_center.y)    * scale, 0.0);
+            vertices.push((pos.get_x() + m.verts[i].get_x())   * scale, (pos.get_y() + m.verts[i].get_y())   * scale, 0.0);
+            vertices.push((pos.get_x() + m.verts[i+1].get_x()) * scale, (pos.get_y() + m.verts[i+1].get_y()) * scale, 0.0);
+        }
+
+        vertices.push((pos.get_x() + m.render_center.x)                 * scale, (pos.get_y() + m.render_center.y)                 * scale, 0.0);
+        vertices.push((pos.get_x() + m.verts[m.verts.length-1].get_x()) * scale, (pos.get_y() + m.verts[m.verts.length-1].get_y()) * scale, 0.0);
+        vertices.push((pos.get_x() + m.verts[0].get_x())                * scale, (pos.get_y() + m.verts[0].get_y())                * scale, 0.0);
+
+    }
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    asteroidVertPosBuffer.itemSize = 3;
+    asteroidVertPosBuffer.numItems = vertices.length / 3;
+
+    asteroidVertColBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, asteroidVertColBuffer);
+
+    var colors = [];
+    for(var i=0; i<vertices.length; ++i) {
+        colors.push(settings.colors.asteroid.r / 255.0, settings.colors.asteroid.g / 255.0, settings.colors.asteroid.b / 255.0, 1.0);
+    }
+
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+    asteroidVertColBuffer.itemSize = 4;
+    asteroidVertColBuffer.numItems = colors.length / 4;
+}
+
+
+
+function drawScene() {
+    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 50.0, pMatrix);
+
+    mat4.identity(mvMatrix);
+
+    mat4.translate(mvMatrix, [0.0, 0.0, -1.0]);
+    gl.bindBuffer(gl.ARRAY_BUFFER, asteroidVertPosBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, asteroidVertPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, asteroidVertColBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, asteroidVertColBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    setMatrixUniforms();
+    gl.drawArrays(gl.TRIANGLES, 0, asteroidVertPosBuffer.numItems);
+
+    window.requestAnimationFrame(drawScene);
+    meter.tick();
+}
+
+
+
+function webGLStart() {
+    initGL(canvas);
+    initShaders();
+    initBuffers();
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.enable(gl.DEPTH_TEST);
+
+    drawScene();
+}
 var game = {
     world: new Box2D.b2World(new Box2D.b2Vec2(0, -25), false),
     game_offset: { x: 0, y: 0 }, /* translation of game world render */
@@ -1298,7 +1464,10 @@ var game = {
 };
 
 game.init();
-setInterval(function() {
-    game.step();
-}, 1000.0 / 60);
-window.requestAnimationFrame(game.render);
+//setInterval(function() {
+//    game.step();
+//}, 1000.0 / 60);
+//window.requestAnimationFrame(game.render);
+webGLStart();
+window.requestAnimationFrame(drawScene);
+

@@ -37,6 +37,7 @@
                 width:100vw;
                 height:100vh;
                 background:url(/img/ui/overlaytile.png) repeat;
+                display:none;
             }
 
             #main_menu {
@@ -60,22 +61,50 @@
         </style>
     </head>
     <body style="overflow:hidden; margin:0px;" oncontextmenu="return false;">
-        <canvas id="canvas"></canvas>
+        <canvas id="canvas" width="500" height="500"></canvas>
         <div id="overlay">
             <div id="main_menu">
                 <h1>smugrubber</h1>
                 <h2>fertilize space with alien remains</h2>
             </div>
         </div>
+
+        <script id="shader-fs" type="x-shader/x-fragment">
+            precision mediump float;
+            varying vec4 vColor;
+
+            void main(void) {
+                gl_FragColor = vColor;
+            }
+        </script>
+
+        <script id="shader-vs" type="x-shader/x-vertex">
+            attribute vec3 aVertexPosition;
+            attribute vec4 aVertexColor;
+
+            uniform mat4 uMVMatrix;
+            uniform mat4 uPMatrix;
+
+            varying vec4 vColor;
+
+            void main(void) {
+                gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+                vColor = aVertexColor;
+            }
+        </script>
+
         <script src="/js/libs/box2d.js"></script>
         <script src="/js/libs/perlin.js"></script>
         <script src="/js/libs/fpsmeter.min.js"></script>
         <script src="/js/libs/seedrandom.min.js"></script>
         <script src="/js/libs/jquery-1.12.1.min.js "></script>
+        <script src="/js/libs/glMatrix-0.9.5.min.js"></script>
+
         <script src="/js/game/objects/guns.js"></script>
         <script src="/js/game/objects/crates.js"></script>
         <script src="/js/game/objects/particles.js"></script>
         <script src="/js/game/objects/settings.js"></script>
+
         <script src="/js/game/game.js"></script>
     </body>
 </html>
