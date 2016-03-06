@@ -1,3 +1,12 @@
+/*
+ninja_to_bullet_mult_f
+for force multiplier
+*_mult for damage multiplier
+*max_d for maximum damage each action can do
+*_min for minimum damage before damage occurs (only used for falling i think)
+*_base for base force 
+when collision occurs 
+*/
 var settings = {
     PTM: 24, /* pixels to meters */
     victoryCondition:{
@@ -52,7 +61,7 @@ var settings = {
         jet_fuel:       1000
     },
     collide: {
-        ninja_to_ninja_base:     20,
+        ninja_to_ninja_base:     10,
         ninja_to_ninja_mult:     0.01,
         ninja_to_ninja_mult_f:   1.0,
         ninja_to_ninja_max_d:    500,
@@ -64,8 +73,8 @@ var settings = {
         ninja_to_crate_mult_f:   0.01,
         ninja_to_crate_max_d:    500,
         ninja_to_bullet_mult:    0.1,
-        ninja_to_bullet_mult_f:  25.0,
-        ninja_to_bullet_max_d:   50.0
+        ninja_to_bullet_mult_f:  15.0,
+        ninja_to_bullet_max_d:   500.0
     },
     spawnpoint: {
         color: 'rgb(26, 32, 60)',
