@@ -129,21 +129,19 @@ function initBuffers() {
     gl.bindBuffer(gl.ARRAY_BUFFER, asteroidVertPosBuffer);
     var vertices = [];
 
-    var scale = 0.01;//1.0 / settings.PTM;
     for(var i in game.asteroids) {
         var m = game.asteroids[i];
         var pos = m.body.GetPosition();
 
         for(var i=0; i<m.verts.length-1; i++) {
-            vertices.push((pos.get_x() + m.render_center.x)    * scale, (pos.get_y() + m.render_center.y)    * scale, 0.0);
-            vertices.push((pos.get_x() + m.verts[i].get_x())   * scale, (pos.get_y() + m.verts[i].get_y())   * scale, 0.0);
-            vertices.push((pos.get_x() + m.verts[i+1].get_x()) * scale, (pos.get_y() + m.verts[i+1].get_y()) * scale, 0.0);
+            vertices.push(pos.get_x() + m.render_center.x,    pos.get_y() + m.render_center.y,    0.0);
+            vertices.push(pos.get_x() + m.verts[i].get_x(),   pos.get_y() + m.verts[i].get_y(),   0.0);
+            vertices.push(pos.get_x() + m.verts[i+1].get_x(), pos.get_y() + m.verts[i+1].get_y(), 0.0);
         }
 
-        vertices.push((pos.get_x() + m.render_center.x)                 * scale, (pos.get_y() + m.render_center.y)                 * scale, 0.0);
-        vertices.push((pos.get_x() + m.verts[m.verts.length-1].get_x()) * scale, (pos.get_y() + m.verts[m.verts.length-1].get_y()) * scale, 0.0);
-        vertices.push((pos.get_x() + m.verts[0].get_x())                * scale, (pos.get_y() + m.verts[0].get_y())                * scale, 0.0);
-
+        vertices.push(pos.get_x() + m.render_center.x,                 pos.get_y() + m.render_center.y,                 0.0);
+        vertices.push(pos.get_x() + m.verts[m.verts.length-1].get_x(), pos.get_y() + m.verts[m.verts.length-1].get_y(), 0.0);
+        vertices.push(pos.get_x() + m.verts[0].get_x(),                pos.get_y() + m.verts[0].get_y(),                0.0);
     }
 
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
@@ -169,11 +167,11 @@ function drawScene() {
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 50.0, pMatrix);
+    mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.01, 50.0, pMatrix);
 
     mat4.identity(mvMatrix);
 
-    mat4.translate(mvMatrix, [0.0, 0.0, -1.0]);
+    mat4.translate(mvMatrix, [-0, -0, -50]);
     gl.bindBuffer(gl.ARRAY_BUFFER, asteroidVertPosBuffer);
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, asteroidVertPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
 

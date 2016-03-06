@@ -8,7 +8,6 @@ for force multiplier
 when collision occurs 
 */
 var settings = {
-    PTM: 24, /* pixels to meters */
     victoryCondition:{
         stock: false, // Game restarts after lives from settings.ninja.stock are gone
         lastMan: false, // Each death adds respawn time, ends the second  only one player is left alive
