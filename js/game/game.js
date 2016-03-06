@@ -46,6 +46,12 @@ var game = {
     boundary: {},
     particles: {},
     spawnpoints: {},
+    entity_category: {
+        asteroid: 1 << 0,
+        ninja:    1 << 1,
+        bullet:   1 << 2,
+        crate:    1 << 3
+    },
     iteration: 0,
     asteroids_created: 0,
     mouseDown: [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -410,12 +416,17 @@ var game = {
         var circleShape = new Box2D.b2CircleShape();
         circleShape.set_m_radius(radius);
 
+        var filter = new Box2D.b2Filter();
+        filter.set_categoryBits(game.entity_category.bullet);
+        filter.set_maskBits(game.entity_category.ninja | game.entity_category.crate | game.entity_category.asteroid);
+
         var fd = new Box2D.b2FixtureDef();
         fd.set_shape(circleShape);
         fd.set_density(guns[gun_type].density);
         fd.set_friction(guns[gun_type].friction);
         fd.set_restitution(guns[gun_type].restitution);
         fd.set_userData(id);
+        fd.set_filter(filter);
 
         var body = this.world.CreateBody(bd);
         body.CreateFixture(fd);
@@ -476,12 +487,17 @@ var game = {
                 var circleShape = new Box2D.b2CircleShape();
                 circleShape.set_m_radius(settings.ninja.body.radius);
 
+                var filter = new Box2D.b2Filter();
+                filter.set_categoryBits(game.entity_category.ninja);
+                filter.set_maskBits(game.entity_category.bullet | game.entity_category.ninja | game.entity_category.asteroid | game.entity_category.crate);
+
                 var fd = new Box2D.b2FixtureDef();
                 fd.set_shape(circleShape);
                 fd.set_density(settings.ninja.body.density);
                 fd.set_friction(settings.ninja.body.friction);
                 fd.set_restitution(settings.ninja.body.restitution);
                 fd.set_userData(id);
+                fd.set_filter(filter);
 
                 if(this.body != null) {
                     game.world.DestroyBody(this.body);
@@ -887,12 +903,17 @@ var game = {
             var ptr_wrapped = Box2D.wrapPointer(buffer, Box2D.b2Vec2);
             polygonShape.Set(ptr_wrapped, vertices.length);
 
+            var filter = new Box2D.b2Filter();
+            filter.set_categoryBits(game.entity_category.asteroid);
+            filter.set_maskBits(game.entity_category.bullet | game.entity_category.ninja | game.entity_category.crate);
+
             var fd = new Box2D.b2FixtureDef();
             fd.set_shape(polygonShape);
             fd.set_density(1.0);
             fd.set_friction(1.0);
             fd.set_restitution(0.1);
             fd.set_userData(id);
+            fd.set_filter(filter);
             
             body.CreateFixture(fd);
         }
@@ -953,12 +974,17 @@ var game = {
         var shape = new Box2D.b2PolygonShape();
         shape.SetAsBox(width, height);
 
+        var filter = new Box2D.b2Filter();
+        filter.set_categoryBits(game.entity_category.crate);
+        filter.set_maskBits(game.entity_category.ninja | game.entity_category.crate | game.entity_category.asteroid | game.entity_category.bullet);
+
         var fd = new Box2D.b2FixtureDef();
         fd.set_shape(shape);
         fd.set_density(crates[crate_type].density);
         fd.set_friction(crates[crate_type].friction);
         fd.set_restitution(crates[crate_type].restitution);
         fd.set_userData(id);
+        fd.set_filter(filter);
 
         var body = this.world.CreateBody(bd);
         body.CreateFixture(fd);
