@@ -295,9 +295,7 @@ var game = {
         this.world.SetContactListener(this.listener);
 
         this.sprites.ninja = new Image();
-        this.sprites.ninja.src = 'sprites/ninja.png';
-        this.sprites.gun = new Image();
-        this.sprites.gun.src = 'sprites/gun.png';
+        this.sprites.ninja.src = '/img/sprites/ninjas/ninja.png';
 
 
         var bounds = { left: 0, right: 0, top: 0, bottom: 0 };
@@ -516,7 +514,7 @@ var game = {
                     ctx.translate(bpos.get_x(), bpos.get_y());
                     ctx.scale(1, this.facing_dir);
                     ctx.rotate(this.gun_angle * this.facing_dir);
-                    ctx.drawImage(game.sprites.gun, 0, 0, r*3, r);
+                    ctx.drawImage(guns[this.gun.type].sprite, 0, 0, r*3, r);
                 ctx.restore();
 
                 ctx.save();
@@ -1183,12 +1181,8 @@ var game = {
                 if(game.ninja.n.alive) {
                     ctx.fillText(Math.floor(game.ninja.n.damage * 100) + "%", 10, hud_height * 0.9);
 
-                    // var gun_text = guns[game.ninja.n.gun.type].name + ": ";
                     var gun_text = "";
-
-                    hudGun = new Image();
-                    hudGun.src = game.ninja.n.gun.src;
-                    ctx.drawImage(hudGun, 100, hud_height * 0.4);
+                    ctx.drawImage(guns[game.ninja.n.gun.type].sprite, 100, hud_height * 0.4);
 
                     if(game.ninja.n.gun.reloadtime > 0) {
                         gun_text += "reloading (" + game.ninja.n.gun.reloadtime + ")";

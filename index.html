@@ -1,40 +1,81 @@
+<!doctype html>
 <html>
+    <head>
+        <title>Smugrubber: The Gaym</title>
+        <style>
+            @font-face {
+                font-family: 'AndaleMonoRegular';
+                src: url('/fonts/AndaleMono-webfont.eot');
+                src: url('/fonts/AndaleMono-webfont.eot?#iefix') format('embedded-opentype'),
+                     url('/fonts/AndaleMono-webfont.woff') format('woff'),
+                     url('/fonts/AndaleMono-webfont.ttf') format('truetype'),
+                     url('/fonts/AndaleMono-webfont.svg#AndaleMonoRegular') format('svg');
+                font-weight: normal;
+                font-style: normal;
 
-	<head>
-		<title>Smugrubber: 2d jetpacking bullethell mayhem</title>
-		<script src="js/jquery-2.2.1.min.js"></script>
-		<script src="js/p5.min.js"></script>
-		<script src="js/p5.dom.min.js"></script>
-		<script src="js/p5.sound.min.js"></script>
-        <!-- <canvas id="canvas"></canvas> -->
-        <script src="box2d.js"></script>
-        <script src="perlin.js"></script>
-        <script src="guns.js"></script>
-        <script src="crates.js"></script>
-        <script src="particles.js"></script>
-        <script src="settings.js"></script>
-        <!-- <script src="intro.js"></script> -->
-		<!-- <script src="intro/intro.js"></script> -->
-		
-	</head>
-	<body>
-	<h1>Smugrubber</h1>
-	<h2>2d jetpacking bullethell mayhem</h2>
-	CONTROLS:
-	<ul>
-		<li>WASD to move</li>
-		<li>Left Click to Shoot</li>
-		<li>Right Click for Jet Pack</li>
-	</ul>
-	OBJECTIVE:
-	<ul>
-		<li>Stay inside the red line</li>
-		<li>Try to outlast the bots</li>
-		<li>DEATH LASTS FOREVER (or until you refresh the page)</li>
-	</ul>
-		<div class="target">
-			<a href="game.html">Start Game</a>
-		</div>
-	</body>
+            }
+
+            html, body {
+                background-color:#222;
+                font-family: 'AndaleMonoRegular';
+                letter-spacing: 0;
+            }
+
+            * {
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+
+            #overlay {
+                position:absolute;
+                top:0;
+                left:0;
+                width:100vw;
+                height:100vh;
+                background:url(/img/ui/overlaytile.png) repeat;
+            }
+
+            #main_menu {
+                color:#fff;
+                font-size:10vw;
+                text-shadow: rgb(255, 255, 255) 0px 0px 2px;
+                text-align:center;
+                margin-top:10vh;
+            }
+            #main_menu h1 {
+                font-size:10vw;
+            }
+
+            #main_menu h2 {
+                font-size:4vw;
+                font-weight:400;
+                margin:0;
+                padding:0;
+            }
+
+        </style>
+    </head>
+    <body style="overflow:hidden; margin:0px;" oncontextmenu="return false;">
+        <canvas id="canvas"></canvas>
+        <div id="overlay">
+            <div id="main_menu">
+                <h1>smugrubber</h1>
+                <h2>fertilize space with alien remains</h2>
+            </div>
+        </div>
+        <script src="/js/libs/box2d.js"></script>
+        <script src="/js/libs/perlin.js"></script>
+        <script src="/js/libs/fpsmeter.min.js"></script>
+        <script src="/js/libs/seedrandom.min.js"></script>
+        <script src="/js/libs/jquery-1.12.1.min.js "></script>
+        <script src="/js/game/objects/guns.js"></script>
+        <script src="/js/game/objects/crates.js"></script>
+        <script src="/js/game/objects/particles.js"></script>
+        <script src="/js/game/objects/settings.js"></script>
+        <script src="/js/game/game.js"></script>
+    </body>
 </html>
-

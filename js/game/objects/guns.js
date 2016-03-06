@@ -1,7 +1,7 @@
 var guns = [
     {
         name: "rifle",
-        src: "sprites/gun.png",
+        src: "gun.png",
         strength:     55.0,
         radius:       0.15,
         density:      1.0,
@@ -18,7 +18,7 @@ var guns = [
     },
     {
         name: "tommy gun",
-        src: "sprites/tommy.png",
+        src: "tommy.png",
         strength:     45.0,
         radius:       0.15,
         density:      1.0,
@@ -35,7 +35,7 @@ var guns = [
     },
     {
         name: "grenade launcher",
-        src: "sprites/nade.png",
+        src: "nade.png",
         strength:     20.0,
         radius:       0.25,
         density:      1.0,
@@ -52,7 +52,7 @@ var guns = [
     },
     {
         name: "sniper",
-        src: "sprites/sniper.png",
+        src: "sniper.png",
         strength:     80.0,
         radius:       0.15,
         density:      1.0,
@@ -69,7 +69,7 @@ var guns = [
     },
     {
         name: "machine gun",
-        src: "sprites/machine.png",
+        src: "machine.png",
         strength:     40.0,
         radius:       0.15,
         density:      1.0,
@@ -85,3 +85,11 @@ var guns = [
         color:        "rgb(20, 70, 200)"
     }
 ];
+
+(function() {
+    for(var i=0; i<guns.length; ++i) {
+        guns[i].sprite = new Image();
+        guns[i].sprite.src = "/img/sprites/guns/" + guns[i].src;
+        delete guns[i].src;
+    }
+})();
