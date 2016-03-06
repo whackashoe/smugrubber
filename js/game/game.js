@@ -34,7 +34,7 @@ function map(value, istart, istop, ostart, ostop) {
 function sign(x) { return x ? x < 0 ? -1 : 1 : 0; }
 
 var game = {
-    world: new Box2D.b2World(new Box2D.b2Vec2(0, -15), false),
+    world: new Box2D.b2World(new Box2D.b2Vec2(0, -25), false),
     game_offset: { x: 0, y: 0 }, /* translation of game world render */
     listener: new Box2D.JSContactListener(),
     user_data: {},
@@ -1143,9 +1143,10 @@ var game = {
             ctx.scale(1, -1);                
             ctx.scale(settings.PTM, settings.PTM);
 
-            for(var i in game.spawnpoints) {
-                game.spawnpoints[i].render();
-            }
+            // disabled 
+            //for(var i in game.spawnpoints) {
+            //    game.spawnpoints[i].render();
+            //}
 
             for(var i in game.particles) {
                 game.particles[i].render();
