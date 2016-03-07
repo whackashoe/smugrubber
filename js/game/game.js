@@ -94,10 +94,11 @@ var game = {
     RESTART: false,
 
     shader_program: gl.createProgram(),
-    translation_matrix: mat4.create(),
+    model_view_matrix: mat4.create(),
+    model_view_matrix_stack: [],
     perspective_matrix: mat4.create(),
     asteroid_vert_pos_buffer:   gl.createBuffer(),
-    asteroid_vert_color_buffer: gl.createBuffer(),
+    asteroid_vert_col_buffer: gl.createBuffer(),
 
     init: function() {
         // setup input system
@@ -185,7 +186,7 @@ var game = {
                 var bullet = game.bullets[bullet_ud];
                 var ninja = game.ninjas[ninja_ud];
 
-                var gd = guns[bullet.gun_type].damage;
+                var gd = m_guns[bullet.gun_type].damage;
                 var f = impactForce * gd * bullet.body.GetMass();
                 var d = ninja.damage;
 
@@ -222,10 +223,10 @@ var game = {
                 var crate = game.crates[crate_ud];
                 var ninja = game.ninjas[ninja_ud];
 
-                var f = impactForce * crate.body.GetMass() * crates[crate.crate.type].damage;
+                var f = impactForce * crate.body.GetMass() * m_crates[crate.crate_type].damage;
                 var d = ninja.damage;
 
-                if(f > crates[crate.crate.type].min_dforce) {
+                if(f > m_crates[crate.crate_type].min_dforce) {
                     ninja.damage += Math.min(settings.collide.ninja_to_crate_max_d, f * settings.collide.ninja_to_crate_mult)
                     var impulse = f * (d + 1.0) * settings.collide.ninja_to_crate_mult_f;
 
@@ -347,7 +348,6 @@ var game = {
             if (y < bounds.bottom) { bounds.bottom = y; }
 
             this.create_asteroid(x, y);
-            this.create_crate(x, y+10, 0, 0, Math.random() < 0.5 ? 0 : 1);
         }
 
         for(var i in game.asteroids) {
@@ -355,6 +355,11 @@ var game = {
             var sp_y = game.asteroids[i].body.GetPosition().get_y() + 15;
 
             game.attempt_to_add_spawn_point(sp_x, sp_y);
+        }
+
+        for(var i in game.spawnpoints) {
+            var s = game.spawnpoints[i];
+            this.create_crate(s.x, s.y, 0, 0, Math.random() < 0.5 ? 0 : 1);
         }
 
         game.boundary = {
@@ -384,6 +389,8 @@ var game = {
         // setup graphics system
         game.init_shaders();
         game.generate_asteroid_gl_buffers();
+        game.generate_crates_gl_buffers();
+        game.generate_guns_gl_buffers();
 
         gl.clearColor(
             settings.colors.background.r / 255.0,
@@ -391,7 +398,99 @@ var game = {
             settings.colors.background.b / 255.0,
             1.0
         );
-        gl.enable(gl.DEPTH_TEST);
+    },
+
+    generate_crates_gl_buffers: function() {
+        for(var i=0; i<m_crates.length; ++i) {
+            var w = m_crates[i].width;
+            var h = m_crates[i].height;
+
+            m_crates[i].pos_buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, m_crates[i].pos_buffer);
+
+            var vertices = [];
+            vertices.push(-w, -h, 0);
+            vertices.push( w, -h, 0);
+            vertices.push( w,  h, 0);
+
+            vertices.push(-w, -h, 0);
+            vertices.push(-w,  h, 0);
+            vertices.push( w,  h, 0);
+
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+            m_crates[i].pos_buffer.itemSize = 3;
+            m_crates[i].pos_buffer.numItems = vertices.length / 3;
+
+            m_crates[i].col_buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, m_crates[i].col_buffer);
+            var colors = [];
+            for(var j=0; j<vertices.length / 3; ++j) {
+                colors.push(
+                    m_crates[i].color.r / 255.0,
+                    m_crates[i].color.g / 255.0,
+                    m_crates[i].color.b / 255.0,
+                    1.0
+                );
+            }
+
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+            m_crates[i].col_buffer.itemSize = 4;
+            m_crates[i].col_buffer.numItems = colors.length / 4;
+
+        }
+    },
+
+    generate_guns_gl_buffers: function() {
+        for(var i=0; i<m_guns.length; ++i) {
+            var r = m_guns[i].radius;
+
+            m_guns[i].pos_buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[i].pos_buffer);
+
+            var vertices = [];
+            var quality = 10;
+            for(var j=0; j<quality; ++j) {
+                vertices.push(0, 0, 0);
+                var a1 = (Math.PI * 2) / quality * j;
+                var a2 = (Math.PI * 2) / quality * ((j + 1) % quality);
+                vertices.push(Math.cos(a1) * r, Math.sin(a1) * r, 0);
+                vertices.push(Math.cos(a2) * r, Math.sin(a2) * r, 0);
+            }
+
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+            m_guns[i].pos_buffer.itemSize = 3;
+            m_guns[i].pos_buffer.numItems = vertices.length / 3;
+
+            m_guns[i].col_buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[i].col_buffer);
+            var colors = [];
+            for(var j=0; j<vertices.length / 3; ++j) {
+                colors.push(
+                    m_guns[i].color.r / 255.0,
+                    m_guns[i].color.g / 255.0,
+                    m_guns[i].color.b / 255.0,
+                    1.0
+                );
+            }
+
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+            m_guns[i].col_buffer.itemSize = 4;
+            m_guns[i].col_buffer.numItems = colors.length / 4;
+        }
+    },
+
+    pushMatrix: function() {
+        var copy = mat4.create();
+        mat4.set(game.model_view_matrix, copy);
+        game.model_view_matrix_stack.push(copy);
+    },
+
+    popMatrix: function() {
+        if(game.model_view_matrix_stack.length == 0) {
+            throw "Popped matrix when size was 0";
+        }
+
+        game.model_view_matrix = game.model_view_matrix_stack.pop();
     },
 
     get_shader: function(id) {
@@ -443,14 +542,14 @@ var game = {
 
         gl.useProgram(game.shader_program);
 
-        game.shader_program.vertexPositionAttribute = gl.getAttribLocation(game.shader_program, "aVertexPosition");
+        game.shader_program.vertexPositionAttribute = gl.getAttribLocation(game.shader_program, "vert_pos");
         gl.enableVertexAttribArray(game.shader_program.vertexPositionAttribute);
 
-        game.shader_program.vertexColorAttribute = gl.getAttribLocation(game.shader_program, "aVertexColor");
+        game.shader_program.vertexColorAttribute = gl.getAttribLocation(game.shader_program, "vert_col");
         gl.enableVertexAttribArray(game.shader_program.vertexColorAttribute);
 
-        game.shader_program.perspective_matrixUniform  = gl.getUniformLocation(game.shader_program, "uPMatrix");
-        game.shader_program.translation_matrixUniform = gl.getUniformLocation(game.shader_program, "uMVMatrix");
+        game.shader_program.perspective_matrixUniform  = gl.getUniformLocation(game.shader_program, "perspective_matrix");
+        game.shader_program.model_view_matrixUniform = gl.getUniformLocation(game.shader_program, "model_view_matrix");
     },
 
     generate_asteroid_gl_buffers: function() {
@@ -476,7 +575,6 @@ var game = {
         game.asteroid_vert_pos_buffer.itemSize = 3;
         game.asteroid_vert_pos_buffer.numItems = vertices.length / 3;
 
-        game.asteroid_vert_col_buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, game.asteroid_vert_col_buffer);
 
         var colors = [];
@@ -586,7 +684,7 @@ var game = {
 
     create_bullet: function(x, y, px, py, gun_type) {
         var id = game.add_user_data({ type: 'bullet', gun_type: gun_type });
-        var radius = guns[gun_type].radius;
+        var radius = m_guns[gun_type].radius;
 
         var bd = new Box2D.b2BodyDef();
         bd.set_type(Box2D.b2_dynamicBody);
@@ -601,9 +699,9 @@ var game = {
 
         var fd = new Box2D.b2FixtureDef();
         fd.set_shape(circleShape);
-        fd.set_density(guns[gun_type].density);
-        fd.set_friction(guns[gun_type].friction);
-        fd.set_restitution(guns[gun_type].restitution);
+        fd.set_density(m_guns[gun_type].density);
+        fd.set_friction(m_guns[gun_type].friction);
+        fd.set_restitution(m_guns[gun_type].restitution);
         fd.set_userData(id);
         fd.set_filter(filter);
 
@@ -616,17 +714,30 @@ var game = {
         game.bullets[id] = {
             body: body,
             radius: radius,
-            lifetime: guns[gun_type].lifetime,
+            lifetime: m_guns[gun_type].lifetime,
             gun_type: gun_type,
             alive: true,
 
             render: function() {
                 var pos = this.body.GetPosition();
-                ctx.beginPath();
-                ctx.arc(pos.get_x(), pos.get_y(), this.radius, 0, 2*Math.PI);
-                ctx.fillStyle = guns[this.gun_type].color;
-                ctx.fill();
-                ctx.closePath();
+                game.pushMatrix();
+                    mat4.translate(game.model_view_matrix, [
+                        pos.get_x(),
+                        pos.get_y(),
+                        0.0
+                    ]);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[this.gun_type].pos_buffer);
+                    gl.vertexAttribPointer(game.shader_program.vertexPositionAttribute, m_guns[this.gun_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[this.gun_type].col_buffer);
+                    gl.vertexAttribPointer(game.shader_program.vertexColorAttribute, m_guns[this.gun_type].col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    
+                    gl.uniformMatrix4fv(game.shader_program.perspective_matrixUniform, false, game.perspective_matrix);
+                    gl.uniformMatrix4fv(game.shader_program.model_view_matrixUniform, false, game.model_view_matrix);
+
+                    gl.drawArrays(gl.TRIANGLES, 0, m_guns[this.gun_type].pos_buffer.numItems);
+                game.popMatrix();
             },
 
             update: function() {
@@ -642,6 +753,41 @@ var game = {
     create_ninja: function() {
         var id = game.add_user_data({ type: 'ninja' });
 
+        var pos_buffer   = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, pos_buffer);
+
+        var vertices = [];
+        var r = settings.ninja.body.radius;
+        vertices.push(-r, -r, 0);
+        vertices.push( r, -r, 0);
+        vertices.push( r,  r, 0);
+
+        vertices.push(-r, -r, 0);
+        vertices.push(-r,  r, 0);
+        vertices.push( r,  r, 0);
+
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+        pos_buffer.itemSize = 3;
+        pos_buffer.numItems = vertices.length / 3;
+
+
+        var col_buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, col_buffer);
+        var colors = [];
+        for(var i=0; i<vertices.length / 3; ++i) {
+            colors.push(
+                1.0,
+                1.0,
+                1.0,
+                1.0
+            );
+        }
+
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+        col_buffer.itemSize = 4;
+        col_buffer.numItems = colors.length / 4;
+
+
         game.ninjas[id] = {
             body: null,
             alive: true,
@@ -651,6 +797,8 @@ var game = {
             gun_angle: 0.0,
             touching_ground: false,
             respawn_counter: 0,
+            pos_buffer: pos_buffer,
+            col_buffer: col_buffer,
             animation: {
 
             },
@@ -687,12 +835,12 @@ var game = {
                 this.alive = true;
                 this.damage = 0;
 
-                var gun_type = Math.floor(Math.random() * guns.length);
+                var gun_type = Math.floor(Math.random() * m_guns.length);
                 this.gun = {
                     type: gun_type,
-                    ammo:         guns[gun_type].ammo,
-                    fireinterval: guns[gun_type].fireinterval,
-                    src: guns[gun_type].src,
+                    ammo:         m_guns[gun_type].ammo,
+                    fireinterval: m_guns[gun_type].fireinterval,
+                    src: m_guns[gun_type].src,
                     reloadtime:   0
                 };
 
@@ -702,32 +850,49 @@ var game = {
             },
 
             render: function() {
-                var bpos = this.body.GetPosition();
-                var r = settings.ninja.body.radius;
+                var pos = this.body.GetPosition();
 
-                ctx.save();
-                    ctx.translate(bpos.get_x(), bpos.get_y());
-                    ctx.scale(1, this.facing_dir);
-                    ctx.rotate(this.gun_angle * this.facing_dir);
-                    ctx.drawImage(guns[this.gun.type].sprite, 0, 0, r*3, r);
-                ctx.restore();
+                // draw gun
+                game.pushMatrix();
+                    mat4.translate(game.model_view_matrix, [
+                        pos.get_x(),
+                        pos.get_y(),
+                        0.0
+                    ]);
+                    mat4.scale(game.model_view_matrix, [1, this.facing_dir, 1]);
+                    mat4.rotate(game.model_view_matrix, this.gun_angle * this.facing_dir, [0, 0, 1]);
 
-                ctx.save();
-                    ctx.translate(bpos.get_x(), bpos.get_y());
-                    ctx.scale(1, -1);
-                    ctx.textAlign = 'center';
-                    ctx.fillStyle = 'rgb(255, 255, 255)';
-                    ctx.font      = '0.65px Andale Mono';
-                    ctx.fillText(this.name + " (" + Math.floor(this.damage*100) + "%)", r, -r*2);
-                    ctx.save();
-                        ctx.scale(this.facing_dir, 1);
-                        if(! this.alive) {
-                            ctx.rotate(this.respawn_counter * 0.01);
-                        }
-                        ctx.drawImage(game.sprites.ninja, -r, -r, r*2, r*2);
-                    ctx.restore();
-                ctx.restore();
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.pos_buffer);
+                    gl.vertexAttribPointer(game.shader_program.vertexPositionAttribute, this.pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
 
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.col_buffer);
+                    gl.vertexAttribPointer(game.shader_program.vertexColorAttribute, this.col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    
+                    gl.uniformMatrix4fv(game.shader_program.perspective_matrixUniform, false, game.perspective_matrix);
+                    gl.uniformMatrix4fv(game.shader_program.model_view_matrixUniform, false, game.model_view_matrix);
+
+                    gl.drawArrays(gl.TRIANGLES, 0, this.pos_buffer.numItems);
+                game.popMatrix();
+
+                // draw ninja
+                game.pushMatrix();
+                    mat4.translate(game.model_view_matrix, [
+                        pos.get_x(),
+                        pos.get_y(),
+                        0.0
+                    ]);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.pos_buffer);
+                    gl.vertexAttribPointer(game.shader_program.vertexPositionAttribute, this.pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.col_buffer);
+                    gl.vertexAttribPointer(game.shader_program.vertexColorAttribute, this.col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    
+                    gl.uniformMatrix4fv(game.shader_program.perspective_matrixUniform, false, game.perspective_matrix);
+                    gl.uniformMatrix4fv(game.shader_program.model_view_matrixUniform, false, game.model_view_matrix);
+
+                    gl.drawArrays(gl.TRIANGLES, 0, this.pos_buffer.numItems);
+                game.popMatrix();
             },
 
             update: function() {
@@ -784,13 +949,13 @@ var game = {
                 }
 
                 if(this.gun.ammo == 0) {
-                    this.gun.ammo = guns[this.gun.type].ammo;
-                    this.gun.reloadtime = guns[this.gun.type].reloadtime;
+                    this.gun.ammo = m_guns[this.gun.type].ammo;
+                    this.gun.reloadtime = m_guns[this.gun.type].reloadtime;
                     return;
                 }
 
-                var strength = guns[this.gun.type].strength;
-                angle += guns[this.gun.type].accuracy * noise.simplex2(game.iteration, 0);
+                var strength = m_guns[this.gun.type].strength;
+                angle += m_guns[this.gun.type].accuracy * noise.simplex2(game.iteration, 0);
 
                 if(isNaN(this.body.GetPosition().get_x())) {
                     alert("cb x nan");
@@ -807,17 +972,17 @@ var game = {
                     this.gun.type
                 );
 
-                var bink_strength = guns[this.gun.type].selfbink;
+                var bink_strength = m_guns[this.gun.type].selfbink;
                 var bink_angle = angle+Math.PI;
                 this.body.ApplyLinearImpulse(new Box2D.b2Vec2(Math.cos(bink_angle) * bink_strength, Math.sin(bink_angle) * bink_strength));
 
 
-                this.gun.fireinterval = guns[this.gun.type].fireinterval;
+                this.gun.fireinterval = m_guns[this.gun.type].fireinterval;
                 this.gun.ammo--;
 
                 if(this.gun.ammo == 0) {
-                    this.gun.ammo = guns[this.gun.type].ammo;
-                    this.gun.reloadtime = guns[this.gun.type].reloadtime;
+                    this.gun.ammo = m_guns[this.gun.type].ammo;
+                    this.gun.reloadtime = m_guns[this.gun.type].reloadtime;
                     return;
                 }
             },
@@ -863,10 +1028,10 @@ var game = {
                 }
 
                 // health pack
-                if(crate.crate.type == 0) {
+                if(crate.crate_type == 0) {
                     this.damage = Math.max(0, this.damage - settings.crates.health_restore);
                 }
-                if(crate.crate.type == 1) {
+                if(crate.crate_type == 1) {
                     this.jetpack.ammo += settings.crates.jet_fuel;
                 }
 
@@ -1104,38 +1269,6 @@ var game = {
             width: width,
             render_center: render_center,
             alive: true,
-
-            render: function() {
-                var pos = this.body.GetPosition();
-                ctx.fillStyle   = settings.colors.asteroid;
-                ctx.strokeStyle = settings.colors.asteroid;
-                ctx.lineWidth = 0.075;
-                
-                for(var i=0; i<verts.length-1; i++) {
-                    ctx.beginPath();
-                    ctx.moveTo(pos.get_x() + render_center.x, 
-                               pos.get_y() + render_center.y);
-                    ctx.lineTo(pos.get_x() + this.verts[i].get_x(), 
-                               pos.get_y() + this.verts[i].get_y());
-                    ctx.lineTo(pos.get_x() + this.verts[i+1].get_x(), 
-                               pos.get_y() + this.verts[i+1].get_y());
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.stroke();
-                }
-
-                ctx.beginPath();
-                ctx.moveTo(pos.get_x() + render_center.x, 
-                           pos.get_y() + render_center.y);
-                ctx.lineTo(pos.get_x() + this.verts[this.verts.length-1].get_x(), 
-                           pos.get_y() + this.verts[this.verts.length-1].get_y());
-                ctx.lineTo(pos.get_x() + this.verts[0].get_x(), 
-                           pos.get_y() + this.verts[0].get_y());
-                ctx.closePath();
-
-                ctx.fill();
-                ctx.stroke();
-            }
         };
 
         return id;
@@ -1143,8 +1276,8 @@ var game = {
 
     create_crate: function(x, y, px, py, crate_type) {
         var id = game.add_user_data({ type: 'crate', crate_type: crate_type });
-        var width  = crates[crate_type].width;
-        var height = crates[crate_type].height;
+        var width  = m_crates[crate_type].width;
+        var height = m_crates[crate_type].height;
 
         var bd = new Box2D.b2BodyDef();
         bd.set_type(Box2D.b2_dynamicBody);
@@ -1159,9 +1292,9 @@ var game = {
 
         var fd = new Box2D.b2FixtureDef();
         fd.set_shape(shape);
-        fd.set_density(crates[crate_type].density);
-        fd.set_friction(crates[crate_type].friction);
-        fd.set_restitution(crates[crate_type].restitution);
+        fd.set_density(m_crates[crate_type].density);
+        fd.set_friction(m_crates[crate_type].friction);
+        fd.set_restitution(m_crates[crate_type].restitution);
         fd.set_userData(id);
         fd.set_filter(filter);
 
@@ -1173,23 +1306,31 @@ var game = {
 
         game.crates[id] = {
             body: body,
-            crate: {
-                type: crate_type,
-                width: width,
-                height: height,
-                color: crates[crate_type].color
-            },
+            crate_type: crate_type,
             alive: true,
 
             render: function() {
                 var pos = this.body.GetPosition();
                 var rot = this.body.GetAngle();
-                ctx.save();
-                    ctx.translate(pos.get_x(), pos.get_y());
-                    ctx.rotate(rot);
-                    ctx.fillStyle = this.crate.color;
-                    ctx.fillRect(-this.crate.width, -this.crate.height, this.crate.width*2, this.crate.height*2);
-                ctx.restore();
+                game.pushMatrix();
+                    mat4.translate(game.model_view_matrix, [
+                        pos.get_x(),
+                        pos.get_y(),
+                        0.0
+                    ]);
+                    mat4.rotate(game.model_view_matrix, rot, [0, 0, 1]);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, m_crates[this.crate_type].pos_buffer);
+                    gl.vertexAttribPointer(game.shader_program.vertexPositionAttribute, m_crates[this.crate_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, m_crates[this.crate_type].col_buffer);
+                    gl.vertexAttribPointer(game.shader_program.vertexColorAttribute, m_crates[this.crate_type].col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    
+                    gl.uniformMatrix4fv(game.shader_program.perspective_matrixUniform, false, game.perspective_matrix);
+                    gl.uniformMatrix4fv(game.shader_program.model_view_matrixUniform, false, game.model_view_matrix);
+
+                    gl.drawArrays(gl.TRIANGLES, 0, m_crates[this.crate_type].pos_buffer.numItems);
+                game.popMatrix();
             },
 
             update: function() {
@@ -1209,7 +1350,7 @@ var game = {
             px: px,
             py: py,
             type: particle_type,
-            lifetime: particles[particle_type].lifetime,
+            lifetime: m_particles[particle_type].lifetime,
             alive: true,
 
             update: function() {
@@ -1333,19 +1474,9 @@ var game = {
         return true;
     },
 
-    render: function() {
-        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.01, 50.0, game.perspective_matrix);
-
-        mat4.identity(game.translation_matrix);
-
-        mat4.translate(game.translation_matrix, [
-            (game.game_offset.x + (canvas.width  / 2) - game.mousex) * 0.04,
-            (game.game_offset.y + (canvas.height / 2) + game.mousey) * 0.04,
-            -50
-        ]);
+    render_asteroids: function() {
+        gl.uniformMatrix4fv(game.shader_program.perspective_matrixUniform, false, game.perspective_matrix);
+        gl.uniformMatrix4fv(game.shader_program.model_view_matrixUniform, false, game.model_view_matrix);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, game.asteroid_vert_pos_buffer);
         gl.vertexAttribPointer(game.shader_program.vertexPositionAttribute, game.asteroid_vert_pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -1353,26 +1484,52 @@ var game = {
         gl.bindBuffer(gl.ARRAY_BUFFER, game.asteroid_vert_col_buffer);
         gl.vertexAttribPointer(game.shader_program.vertexColorAttribute, game.asteroid_vert_col_buffer.itemSize, gl.FLOAT, false, 0, 0);
 
-
-        gl.uniformMatrix4fv(game.shader_program.perspective_matrixUniform, false, game.perspective_matrix);
-        gl.uniformMatrix4fv(game.shader_program.translation_matrixUniform, false, game.translation_matrix);
-
         gl.drawArrays(gl.TRIANGLES, 0, game.asteroid_vert_pos_buffer.numItems);
+    },
+
+    render: function() {
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.01, 50.0, game.perspective_matrix);
+
+        mat4.identity(game.model_view_matrix);
+
+        mat4.translate(game.model_view_matrix, [
+            (game.game_offset.x + (canvas.width  / 2) - game.mousex) * 0.04,
+            (game.game_offset.y + (canvas.height / 2) + game.mousey) * 0.04,
+            -50
+        ]);
+
+        if(game.camninja != null) {
+            var pos = game.camninja.body.GetPosition();
+            mat4.translate(game.model_view_matrix, [
+                -pos.get_x(),
+                -pos.get_y() - (canvas.height * 0.04),
+                0.0
+            ]);
+        }
 
 
 
+        game.render_asteroids();
 
-        /*ctx.fillStyle = settings.colors.background;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
+        for(var i in game.ninjas) {
+            game.ninjas[i].render();
+        }
+
+        for(var i in game.crates) {
+            game.crates[i].render();
+        }
+
+        for(var i in game.bullets) {
+            game.bullets[i].render();
+        }
+
+
+        /*
         ctx.save();            
             ctx.translate(game.game_offset.x + canvas.width/2 - game.mousex, game.game_offset.y + canvas.height / 2 - game.mousey);
-            if(game.camninja != null) {
-                var pos = game.camninja.body.GetPosition();
-                ctx.translate((-pos.get_x()*settings.PTM) + (canvas.width / 2), (pos.get_y()*settings.PTM) + canvas.height / 2);
-
-                ctx.rotate(map(game.camninja.body.GetLinearVelocity().get_x(), -20, 20, -0.005, 0.005));
-            }
             ctx.scale(1, -1);                
             ctx.scale(settings.PTM, settings.PTM);
 
@@ -1385,24 +1542,9 @@ var game = {
                 game.particles[i].render();
             }
 
-            for(var i in game.crates) {
-                game.crates[i].render();
-            }
-
-            for(var i in game.bullets) {
-                game.bullets[i].render();
-            }
-
-            for(var i in game.asteroids) {
-                game.asteroids[i].render();
-            }
-
             game.boundary.render();
 
 
-            for(var i in game.ninjas) {
-                game.ninjas[i].render();
-            }
         ctx.restore();
 
         if(game.ninja != null) {

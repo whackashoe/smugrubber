@@ -71,25 +71,25 @@
 
         <script id="shader-fs" type="x-shader/x-fragment">
             precision mediump float;
-            varying vec4 vColor;
+            varying vec4 vert_color;
 
             void main(void) {
-                gl_FragColor = vColor;
+                gl_FragColor = vert_color;
             }
         </script>
 
         <script id="shader-vs" type="x-shader/x-vertex">
-            attribute vec3 aVertexPosition;
-            attribute vec4 aVertexColor;
+            attribute vec3 vert_pos;
+            attribute vec4 vert_col;
 
-            uniform mat4 uMVMatrix;
-            uniform mat4 uPMatrix;
+            uniform mat4 model_view_matrix;
+            uniform mat4 perspective_matrix;
 
-            varying vec4 vColor;
+            varying vec4 vert_color;
 
             void main(void) {
-                gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-                vColor = aVertexColor;
+                gl_Position = perspective_matrix * model_view_matrix * vec4(vert_pos, 1.0);
+                vert_color = vert_col;
             }
         </script>
 

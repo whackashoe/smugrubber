@@ -1,4 +1,4 @@
-var crates = [
+var m_crates = [
     {
         name: "health pack",    
         width:        0.5,
@@ -6,7 +6,11 @@ var crates = [
         density:      1.0,
         friction:     1.0,
         restitution:  0.2,
-        color:        "rgb(180, 20, 90)",
+        color: {
+            r: 180,
+            g: 20,
+            b: 90
+        },
         damage:       0,
         min_dforce:   10
     },
@@ -17,7 +21,11 @@ var crates = [
         density:      5.0,
         friction:     1.0,
         restitution:  0.2,
-        color:        "rgb(0, 100, 0)",
+        color: {
+            r: 0,
+            g: 100,
+            b: 0
+        },
         damage:       0,
         min_dforce:   10
     }

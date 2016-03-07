@@ -1,4 +1,4 @@
-var guns = [
+var m_guns = [
     {
         name: "rifle",
         src: "gun.png",
@@ -14,7 +14,11 @@ var guns = [
         lifetime:     240,
         damage:       0.6,
         accuracy:     0.01,
-        color:        "rgb(180, 130, 130)"
+        color: {
+            r: 180,
+            g: 130,
+            b: 130
+        }
     },
     {
         name: "tommy gun",
@@ -31,7 +35,11 @@ var guns = [
         lifetime:     240,
         damage:       0.2,
         accuracy:     0.1,
-        color:        "rgb(130, 130, 130)"
+        color: {
+            r: 130,
+            g: 130,
+            b: 130
+        }
     },
     {
         name: "grenade launcher",
@@ -48,7 +56,11 @@ var guns = [
         lifetime:     240,
         damage:       5.0,
         accuracy:     0.1,
-        color:        "rgb(30, 240, 30)"
+        color: {
+            r: 30,
+            g: 240,
+            b: 30
+        }
     },
     {
         name: "sniper",
@@ -65,7 +77,11 @@ var guns = [
         lifetime:     240,
         damage:       0.9,
         accuracy:     0.01,
-        color:        "rgb(200, 50, 50)"
+        color: {
+            r: 200,
+            g: 50,
+            b: 50
+        }
     },
     {
         name: "machine gun",
@@ -82,14 +98,18 @@ var guns = [
         lifetime:     240,
         damage:       0.20,
         accuracy:     0.1,
-        color:        "rgb(20, 70, 200)"
+        color: {
+            r: 20,
+            g: 70,
+            b: 200
+        }
     }
 ];
 
 (function() {
-    for(var i=0; i<guns.length; ++i) {
-        guns[i].sprite = new Image();
-        guns[i].sprite.src = "/img/sprites/guns/" + guns[i].src;
-        delete guns[i].src;
+    for(var i=0; i<m_guns.length; ++i) {
+        m_guns[i].sprite = new Image();
+        m_guns[i].sprite.src = "/img/sprites/guns/" + m_guns[i].src;
+        delete m_guns[i].src;
     }
 })();

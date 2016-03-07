@@ -1,4 +1,4 @@
-var particles = [
+var m_particles = [
     {
         color: "rgb(50, 50, 50)",
         radius: 0.2,

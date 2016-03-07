@@ -89,7 +89,7 @@ var settings = {
         place_y_offset: -60
     },
     bots: {
-        amount: 100,
+        amount: 10,
         target: "you", //either all or you
         target_switch_nsec: 5,
         jump_nsec: 5,

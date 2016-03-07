@@ -1,4 +1,4 @@
-var animations = [
+var m_animations = [
     {
         
     }
