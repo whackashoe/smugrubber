@@ -20,7 +20,11 @@ var settings = {
         change_weapon: 81 // q
     },
     colors: {
-        background: 'rgb(20, 20, 20)',
+        background: {
+            r: 20,
+            g: 20,
+            b: 20
+        },
         asteroid: {
             r: 88,
             g: 53,
@@ -85,7 +89,7 @@ var settings = {
         place_y_offset: -60
     },
     bots: {
-        amount: 10,
+        amount: 100,
         target: "you", //either all or you
         target_switch_nsec: 5,
         jump_nsec: 5,

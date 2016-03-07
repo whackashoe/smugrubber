@@ -10,13 +10,16 @@ Array.prototype.remove = function(from, to) {
 };
 
 var canvas    = document.getElementById("canvas");
-//var ctx       = canvas.getContext("2d");
 canvas.width  = document.documentElement.clientWidth;
 canvas.height = document.documentElement.clientHeight;
+
+var gl = initGL();
 
 window.onresize = function() {
     canvas.width  = document.documentElement.clientWidth;
     canvas.height = document.documentElement.clientHeight;
+    gl.viewportWidth = canvas.width;
+    gl.viewportHeight = canvas.height;
 };
 
 var meter = new FPSMeter();
@@ -33,210 +36,26 @@ function map(value, istart, istop, ostart, ostop) {
 
 function sign(x) { return x ? x < 0 ? -1 : 1 : 0; }
 
-var gl;
 
-function initGL(canvas) {
+function initGL()
+{
+    var gl;
     try {
         gl = canvas.getContext("webgl");
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
     } catch (e) {
+        console.log(e);
     }
-    if (!gl) {
+
+    if(! gl) {
         alert("Could not initialise WebGL, sorry :-(");
     }
+
+    return gl;
 }
 
 
-function getShader(gl, id) {
-    var shaderScript = document.getElementById(id);
-    if (!shaderScript) {
-        return null;
-    }
-
-    var str = "";
-    var k = shaderScript.firstChild;
-    while (k) {
-        if (k.nodeType == 3) {
-            str += k.textContent;
-        }
-        k = k.nextSibling;
-    }
-
-    var shader;
-    if (shaderScript.type == "x-shader/x-fragment") {
-        shader = gl.createShader(gl.FRAGMENT_SHADER);
-    } else if (shaderScript.type == "x-shader/x-vertex") {
-        shader = gl.createShader(gl.VERTEX_SHADER);
-    } else {
-        return null;
-    }
-
-    gl.shaderSource(shader, str);
-    gl.compileShader(shader);
-
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        alert(gl.getShaderInfoLog(shader));
-        return null;
-    }
-
-    return shader;
-}
-
-
-var shaderProgram;
-
-function initShaders() {
-    var fragmentShader = getShader(gl, "shader-fs");
-    var vertexShader = getShader(gl, "shader-vs");
-
-    shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
-
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-        alert("Could not initialise shaders");
-    }
-
-    gl.useProgram(shaderProgram);
-
-    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
-
-    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
-    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
-
-    shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
-    shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-}
-
-
-var mvMatrix = mat4.create();
-var pMatrix = mat4.create();
-
-function setMatrixUniforms() {
-    gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
-    gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
-}
-
-
-var asteroidVertPosBuffer;
-var asteroidVertColBuffer;
-
-function initBuffers() {
-    asteroidVertPosBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, asteroidVertPosBuffer);
-    var vertices = [];
-
-    for(var i in game.asteroids) {
-        var m = game.asteroids[i];
-        var pos = m.body.GetPosition();
-
-        for(var i=0; i<m.verts.length-1; i++) {
-            vertices.push(pos.get_x() + m.render_center.x,    pos.get_y() + m.render_center.y,    0.0);
-            vertices.push(pos.get_x() + m.verts[i].get_x(),   pos.get_y() + m.verts[i].get_y(),   0.0);
-            vertices.push(pos.get_x() + m.verts[i+1].get_x(), pos.get_y() + m.verts[i+1].get_y(), 0.0);
-        }
-
-        vertices.push(pos.get_x() + m.render_center.x,                 pos.get_y() + m.render_center.y,                 0.0);
-        vertices.push(pos.get_x() + m.verts[m.verts.length-1].get_x(), pos.get_y() + m.verts[m.verts.length-1].get_y(), 0.0);
-        vertices.push(pos.get_x() + m.verts[0].get_x(),                pos.get_y() + m.verts[0].get_y(),                0.0);
-    }
-
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-    asteroidVertPosBuffer.itemSize = 3;
-    asteroidVertPosBuffer.numItems = vertices.length / 3;
-
-    asteroidVertColBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, asteroidVertColBuffer);
-
-    var colors = [];
-    for(var i in game.asteroids) {
-        var m = game.asteroids[i];
-
-        for(var i=0; i<m.verts.length-1; i++) {
-            colors.push(
-                settings.colors.asteroid.r / 255.0,
-                settings.colors.asteroid.g / 255.0,
-                settings.colors.asteroid.b / 255.0,
-                1.0
-            );
-            colors.push(
-                settings.colors.asteroid.r / (255.0 - (Math.random() * 10)),
-                settings.colors.asteroid.g / (255.0 - (Math.random() * 10)),
-                settings.colors.asteroid.b / (255.0 - (Math.random() * 10)),
-                1.0
-            );
-            colors.push(
-                settings.colors.asteroid.r / (255.0 - (Math.random() * 10)),
-                settings.colors.asteroid.g / (255.0 - (Math.random() * 10)),
-                settings.colors.asteroid.b / (255.0 - (Math.random() * 10)),
-                1.0
-            );
-        }
-
-        colors.push(
-            settings.colors.asteroid.r / 255.0,
-            settings.colors.asteroid.g / 255.0,
-            settings.colors.asteroid.b / 255.0,
-            1.0
-        );
-        colors.push(
-            settings.colors.asteroid.r / (255.0 - (Math.random() * 10)),
-            settings.colors.asteroid.g / (255.0 - (Math.random() * 10)),
-            settings.colors.asteroid.b / (255.0 - (Math.random() * 10)),
-            1.0
-        );
-        colors.push(
-            settings.colors.asteroid.r / (255.0 - (Math.random() * 10)),
-            settings.colors.asteroid.g / (255.0 - (Math.random() * 10)),
-            settings.colors.asteroid.b / (255.0 - (Math.random() * 10)),
-            1.0
-        );
-    }
-
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-    asteroidVertColBuffer.itemSize = 4;
-    asteroidVertColBuffer.numItems = colors.length / 4;
-}
-
-
-
-function drawScene() {
-    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.01, 50.0, pMatrix);
-
-    mat4.identity(mvMatrix);
-
-    mat4.translate(mvMatrix, [-0, -0, -50]);
-    gl.bindBuffer(gl.ARRAY_BUFFER, asteroidVertPosBuffer);
-    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, asteroidVertPosBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, asteroidVertColBuffer);
-    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, asteroidVertColBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    setMatrixUniforms();
-    gl.drawArrays(gl.TRIANGLES, 0, asteroidVertPosBuffer.numItems);
-
-    window.requestAnimationFrame(drawScene);
-    meter.tick();
-}
-
-
-
-function webGLStart() {
-    initGL(canvas);
-    initShaders();
-    initBuffers();
-
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.enable(gl.DEPTH_TEST);
-
-    drawScene();
-}
 var game = {
     world: new Box2D.b2World(new Box2D.b2Vec2(0, -25), false),
     game_offset: { x: 0, y: 0 }, /* translation of game world render */
@@ -274,14 +93,22 @@ var game = {
     in_main_menu: true,
     RESTART: false,
 
-    init: function() {
-        document.onmousedown = this.mousedown;
-        document.onmouseup   = this.mouseup;
-        document.onmousemove = this.mousemove;
-        document.oncontextmenu = this.rightclick;
-        document.onkeydown   = this.keydown;
-        document.onkeyup     = this.keyup;
+    shader_program: gl.createProgram(),
+    translation_matrix: mat4.create(),
+    perspective_matrix: mat4.create(),
+    asteroid_vert_pos_buffer:   gl.createBuffer(),
+    asteroid_vert_color_buffer: gl.createBuffer(),
 
+    init: function() {
+        // setup input system
+        document.onmousedown   = this.mousedown;
+        document.onmouseup     = this.mouseup;
+        document.onmousemove   = this.mousemove;
+        document.oncontextmenu = this.rightclick;
+        document.onkeydown     = this.keydown;
+        document.onkeyup       = this.keyup;
+
+        // setup collision fun
         this.listener.BeginContact = function(contactPtr) {
             var contact = Box2D.wrapPointer(contactPtr, Box2D.b2Contact);
             var udA = contact.GetFixtureA().GetUserData();
@@ -552,6 +379,154 @@ var game = {
             game.ninja_ais.push(game.ninja_ai_controller(game.ninjas[id]));
             game.camninja = game.ninjas[id];
         }
+
+
+        // setup graphics system
+        game.init_shaders();
+        game.generate_asteroid_gl_buffers();
+
+        gl.clearColor(
+            settings.colors.background.r / 255.0,
+            settings.colors.background.g / 255.0,
+            settings.colors.background.b / 255.0,
+            1.0
+        );
+        gl.enable(gl.DEPTH_TEST);
+    },
+
+    get_shader: function(id) {
+        var shaderScript = document.getElementById(id);
+        if(! shaderScript) {
+            return null;
+        }
+
+        var str = "";
+        var k = shaderScript.firstChild;
+        while (k) {
+            if (k.nodeType == 3) {
+                str += k.textContent;
+            }
+            k = k.nextSibling;
+        }
+
+        var shader;
+        if (shaderScript.type == "x-shader/x-fragment") {
+            shader = gl.createShader(gl.FRAGMENT_SHADER);
+        } else if (shaderScript.type == "x-shader/x-vertex") {
+            shader = gl.createShader(gl.VERTEX_SHADER);
+        } else {
+            return null;
+        }
+
+        gl.shaderSource(shader, str);
+        gl.compileShader(shader);
+
+        if(! gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            alert(gl.getShaderInfoLog(shader));
+            return null;
+        }
+
+        return shader;
+    },
+
+    init_shaders: function() {
+        var fragmentShader = game.get_shader("shader-fs");
+        var vertexShader   = game.get_shader("shader-vs");
+
+        gl.attachShader(game.shader_program, vertexShader);
+        gl.attachShader(game.shader_program, fragmentShader);
+        gl.linkProgram(game.shader_program);
+
+        if(! gl.getProgramParameter(game.shader_program, gl.LINK_STATUS)) {
+            alert("Could not initialise shaders");
+        }
+
+        gl.useProgram(game.shader_program);
+
+        game.shader_program.vertexPositionAttribute = gl.getAttribLocation(game.shader_program, "aVertexPosition");
+        gl.enableVertexAttribArray(game.shader_program.vertexPositionAttribute);
+
+        game.shader_program.vertexColorAttribute = gl.getAttribLocation(game.shader_program, "aVertexColor");
+        gl.enableVertexAttribArray(game.shader_program.vertexColorAttribute);
+
+        game.shader_program.perspective_matrixUniform  = gl.getUniformLocation(game.shader_program, "uPMatrix");
+        game.shader_program.translation_matrixUniform = gl.getUniformLocation(game.shader_program, "uMVMatrix");
+    },
+
+    generate_asteroid_gl_buffers: function() {
+        gl.bindBuffer(gl.ARRAY_BUFFER, game.asteroid_vert_pos_buffer);
+        var vertices = [];
+
+        for(var i in game.asteroids) {
+            var m = game.asteroids[i];
+            var pos = m.body.GetPosition();
+
+            for(var i=0; i<m.verts.length-1; i++) {
+                vertices.push(pos.get_x() + m.render_center.x,    pos.get_y() + m.render_center.y,    0.0);
+                vertices.push(pos.get_x() + m.verts[i].get_x(),   pos.get_y() + m.verts[i].get_y(),   0.0);
+                vertices.push(pos.get_x() + m.verts[i+1].get_x(), pos.get_y() + m.verts[i+1].get_y(), 0.0);
+            }
+
+            vertices.push(pos.get_x() + m.render_center.x,                 pos.get_y() + m.render_center.y,                 0.0);
+            vertices.push(pos.get_x() + m.verts[m.verts.length-1].get_x(), pos.get_y() + m.verts[m.verts.length-1].get_y(), 0.0);
+            vertices.push(pos.get_x() + m.verts[0].get_x(),                pos.get_y() + m.verts[0].get_y(),                0.0);
+        }
+
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+        game.asteroid_vert_pos_buffer.itemSize = 3;
+        game.asteroid_vert_pos_buffer.numItems = vertices.length / 3;
+
+        game.asteroid_vert_col_buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, game.asteroid_vert_col_buffer);
+
+        var colors = [];
+        for(var i in game.asteroids) {
+            var m = game.asteroids[i];
+
+            for(var i=0; i<m.verts.length-1; i++) {
+                colors.push(
+                    settings.colors.asteroid.r / 255.0,
+                    settings.colors.asteroid.g / 255.0,
+                    settings.colors.asteroid.b / 255.0,
+                    1.0
+                );
+                colors.push(
+                    settings.colors.asteroid.r / (255.0 - (Math.random() * 10)),
+                    settings.colors.asteroid.g / (255.0 - (Math.random() * 10)),
+                    settings.colors.asteroid.b / (255.0 - (Math.random() * 10)),
+                    1.0
+                );
+                colors.push(
+                    settings.colors.asteroid.r / (255.0 - (Math.random() * 10)),
+                    settings.colors.asteroid.g / (255.0 - (Math.random() * 10)),
+                    settings.colors.asteroid.b / (255.0 - (Math.random() * 10)),
+                    1.0
+                );
+            }
+
+            colors.push(
+                settings.colors.asteroid.r / 255.0,
+                settings.colors.asteroid.g / 255.0,
+                settings.colors.asteroid.b / 255.0,
+                1.0
+            );
+            colors.push(
+                settings.colors.asteroid.r / (255.0 - (Math.random() * 10)),
+                settings.colors.asteroid.g / (255.0 - (Math.random() * 10)),
+                settings.colors.asteroid.b / (255.0 - (Math.random() * 10)),
+                1.0
+            );
+            colors.push(
+                settings.colors.asteroid.r / (255.0 - (Math.random() * 10)),
+                settings.colors.asteroid.g / (255.0 - (Math.random() * 10)),
+                settings.colors.asteroid.b / (255.0 - (Math.random() * 10)),
+                1.0
+            );
+        }
+
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+        game.asteroid_vert_col_buffer.itemSize = 4;
+        game.asteroid_vert_col_buffer.numItems = colors.length / 4;
     },
 
     add_user_data: function(data) {
@@ -1359,7 +1334,35 @@ var game = {
     },
 
     render: function() {
-        ctx.fillStyle = settings.colors.background;
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.01, 50.0, game.perspective_matrix);
+
+        mat4.identity(game.translation_matrix);
+
+        mat4.translate(game.translation_matrix, [
+            (game.game_offset.x + (canvas.width  / 2) - game.mousex) * 0.04,
+            (game.game_offset.y + (canvas.height / 2) + game.mousey) * 0.04,
+            -50
+        ]);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, game.asteroid_vert_pos_buffer);
+        gl.vertexAttribPointer(game.shader_program.vertexPositionAttribute, game.asteroid_vert_pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, game.asteroid_vert_col_buffer);
+        gl.vertexAttribPointer(game.shader_program.vertexColorAttribute, game.asteroid_vert_col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+
+
+        gl.uniformMatrix4fv(game.shader_program.perspective_matrixUniform, false, game.perspective_matrix);
+        gl.uniformMatrix4fv(game.shader_program.translation_matrixUniform, false, game.translation_matrix);
+
+        gl.drawArrays(gl.TRIANGLES, 0, game.asteroid_vert_pos_buffer.numItems);
+
+
+
+
+        /*ctx.fillStyle = settings.colors.background;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         ctx.save();            
@@ -1438,7 +1441,7 @@ var game = {
                     ctx.fillText("respawning in: " + game.ninja.n.respawn_counter, 10, hud_height * 0.8);
                 }
             ctx.restore();
-        }
+        }*/
 
 
         window.requestAnimationFrame(game.render);
@@ -1502,10 +1505,8 @@ var game = {
 };
 
 game.init();
-//setInterval(function() {
-//    game.step();
-//}, 1000.0 / 60);
-//window.requestAnimationFrame(game.render);
-webGLStart();
-window.requestAnimationFrame(drawScene);
+setInterval(function() {
+    game.step();
+}, 1000.0 / 60);
+window.requestAnimationFrame(game.render);
 
