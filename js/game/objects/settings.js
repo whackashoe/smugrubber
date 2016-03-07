@@ -1,12 +1,3 @@
-/*
-ninja_to_bullet_mult_f
-for force multiplier
-*_mult for damage multiplier
-*max_d for maximum damage each action can do
-*_min for minimum damage before damage occurs (only used for falling i think)
-*_base for base force 
-when collision occurs 
-*/
 var settings = {
     victoryCondition:{
         stock: false, // Game restarts after lives from settings.ninja.stock are gone

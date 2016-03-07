@@ -152,8 +152,48 @@ function initBuffers() {
     gl.bindBuffer(gl.ARRAY_BUFFER, asteroidVertColBuffer);
 
     var colors = [];
-    for(var i=0; i<vertices.length; ++i) {
-        colors.push(settings.colors.asteroid.r / 255.0, settings.colors.asteroid.g / 255.0, settings.colors.asteroid.b / 255.0, 1.0);
+    for(var i in game.asteroids) {
+        var m = game.asteroids[i];
+
+        for(var i=0; i<m.verts.length-1; i++) {
+            colors.push(
+                settings.colors.asteroid.r / 255.0,
+                settings.colors.asteroid.g / 255.0,
+                settings.colors.asteroid.b / 255.0,
+                1.0
+            );
+            colors.push(
+                settings.colors.asteroid.r / (255.0 - (Math.random() * 10)),
+                settings.colors.asteroid.g / (255.0 - (Math.random() * 10)),
+                settings.colors.asteroid.b / (255.0 - (Math.random() * 10)),
+                1.0
+            );
+            colors.push(
+                settings.colors.asteroid.r / (255.0 - (Math.random() * 10)),
+                settings.colors.asteroid.g / (255.0 - (Math.random() * 10)),
+                settings.colors.asteroid.b / (255.0 - (Math.random() * 10)),
+                1.0
+            );
+        }
+
+        colors.push(
+            settings.colors.asteroid.r / 255.0,
+            settings.colors.asteroid.g / 255.0,
+            settings.colors.asteroid.b / 255.0,
+            1.0
+        );
+        colors.push(
+            settings.colors.asteroid.r / (255.0 - (Math.random() * 10)),
+            settings.colors.asteroid.g / (255.0 - (Math.random() * 10)),
+            settings.colors.asteroid.b / (255.0 - (Math.random() * 10)),
+            1.0
+        );
+        colors.push(
+            settings.colors.asteroid.r / (255.0 - (Math.random() * 10)),
+            settings.colors.asteroid.g / (255.0 - (Math.random() * 10)),
+            settings.colors.asteroid.b / (255.0 - (Math.random() * 10)),
+            1.0
+        );
     }
 
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
