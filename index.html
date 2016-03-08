@@ -37,7 +37,6 @@
                 width:100vw;
                 height:100vh;
                 background:url(/img/ui/overlaytile.png) repeat;
-                display:none;
             }
 
             #main_menu {
@@ -68,8 +67,32 @@
                 <h2>fertilize space with alien remains</h2>
             </div>
         </div>
+        <script id="texture-shader-fs" type="x-shader/x-fragment">
+            precision mediump float;
+            varying vec2 texture_coord;
+            uniform sampler2D sampler;
 
-        <script id="shader-fs" type="x-shader/x-fragment">
+            void main(void) {
+                gl_FragColor = texture2D(sampler, vec2(texture_coord.s, texture_coord.t));
+            }
+        </script>
+
+        <script id="texture-shader-vs" type="x-shader/x-vertex">
+            attribute vec3 vert_pos_attr;
+            attribute vec2 texture_coord_attr;
+
+            uniform mat4 model_view_matrix;
+            uniform mat4 perspective_matrix;
+
+            varying vec2 texture_coord;
+
+            void main(void) {
+                gl_Position = perspective_matrix * model_view_matrix * vec4(vert_pos_attr, 1.0);
+                texture_coord = texture_coord_attr;
+            }
+        </script>
+
+        <script id="color-shader-fs" type="x-shader/x-fragment">
             precision mediump float;
             varying vec4 vert_color;
 
@@ -78,9 +101,9 @@
             }
         </script>
 
-        <script id="shader-vs" type="x-shader/x-vertex">
-            attribute vec3 vert_pos;
-            attribute vec4 vert_col;
+        <script id="color-shader-vs" type="x-shader/x-vertex">
+            attribute vec3 vert_pos_attr;
+            attribute vec4 vert_col_attr;
 
             uniform mat4 model_view_matrix;
             uniform mat4 perspective_matrix;
@@ -88,8 +111,8 @@
             varying vec4 vert_color;
 
             void main(void) {
-                gl_Position = perspective_matrix * model_view_matrix * vec4(vert_pos, 1.0);
-                vert_color = vert_col;
+                gl_Position = perspective_matrix * model_view_matrix * vec4(vert_pos_attr, 1.0);
+                vert_color = vert_col_attr;
             }
         </script>
 
@@ -103,6 +126,7 @@
         <script src="/js/game/objects/guns.js"></script>
         <script src="/js/game/objects/crates.js"></script>
         <script src="/js/game/objects/particles.js"></script>
+        <script src="/js/game/objects/ninjas.js"></script>
         <script src="/js/game/objects/settings.js"></script>
 
         <script src="/js/game/game.js"></script>

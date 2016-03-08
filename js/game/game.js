@@ -93,7 +93,8 @@ var game = {
     in_main_menu: true,
     RESTART: false,
 
-    shader_program: gl.createProgram(),
+    color_shader_program: gl.createProgram(),
+    texture_shader_program: gl.createProgram(),
     model_view_matrix: mat4.create(),
     model_view_matrix_stack: [],
     perspective_matrix: mat4.create(),
@@ -391,6 +392,7 @@ var game = {
         game.generate_asteroid_gl_buffers();
         game.generate_crates_gl_buffers();
         game.generate_guns_gl_buffers();
+        game.generate_ninjas_gl_buffers();
 
         gl.clearColor(
             settings.colors.background.r / 255.0,
@@ -479,6 +481,61 @@ var game = {
         }
     },
 
+    generate_ninjas_gl_buffers: function() {
+        var m = m_ninjas[0];
+
+        m.pos_buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, m.pos_buffer);
+
+        var vertices = [];
+        var r = m.body.radius;
+        vertices.push(-r, -r, 0);
+        vertices.push( r, -r, 0);
+        vertices.push( r,  r, 0);
+
+        vertices.push(-r, -r, 0);
+        vertices.push(-r,  r, 0);
+        vertices.push( r,  r, 0);
+
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+        m.pos_buffer.itemSize = 3;
+        m.pos_buffer.numItems = vertices.length / 3;
+
+        m.texture = gl.createTexture();
+        m.texture.image = new Image();
+        m.texture.image.onload = function() {
+            gl.bindTexture(gl.TEXTURE_2D, m.texture);
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, m.texture.image);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+        };
+        m.texture.image.src = "/img/sprites/ninjas/ninja.png";
+
+
+
+        m.texture_buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, m.texture_buffer);
+        var tcoords = [
+            0.0, 0.0,
+            1.0, 0.0,
+            1.0, 1.0,
+            0.0, 1.0
+        ];
+
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tcoords), gl.STATIC_DRAW);
+        m.texture_buffer.itemSize = 2;
+        m.texture_buffer.numItems = tcoords.length / 2;
+
+        m.vert_index_buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.vert_index_buffer);
+        var vert_indexs = [0, 1, 2,     0, 2, 3];
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(vert_indexs), gl.STATIC_DRAW);
+        m.vert_index_buffer.itemSize = 1;
+        m.vert_index_buffer.numItems = vert_indexs.length;
+    },
+
     pushMatrix: function() {
         var copy = mat4.create();
         mat4.set(game.model_view_matrix, copy);
@@ -529,27 +586,54 @@ var game = {
     },
 
     init_shaders: function() {
-        var fragmentShader = game.get_shader("shader-fs");
-        var vertexShader   = game.get_shader("shader-vs");
+        var color_fragment_shader = game.get_shader("color-shader-fs");
+        var color_vertex_shader   = game.get_shader("color-shader-vs");
 
-        gl.attachShader(game.shader_program, vertexShader);
-        gl.attachShader(game.shader_program, fragmentShader);
-        gl.linkProgram(game.shader_program);
+        gl.attachShader(game.color_shader_program, color_vertex_shader);
+        gl.attachShader(game.color_shader_program, color_fragment_shader);
+        gl.linkProgram(game.color_shader_program);
 
-        if(! gl.getProgramParameter(game.shader_program, gl.LINK_STATUS)) {
-            alert("Could not initialise shaders");
+        if(! gl.getProgramParameter(game.color_shader_program, gl.LINK_STATUS)) {
+            alert("Could not initialise color shader");
+            return;
         }
 
-        gl.useProgram(game.shader_program);
+        gl.useProgram(game.color_shader_program);
 
-        game.shader_program.vertexPositionAttribute = gl.getAttribLocation(game.shader_program, "vert_pos");
-        gl.enableVertexAttribArray(game.shader_program.vertexPositionAttribute);
+        game.color_shader_program.vertex_position_attribute = gl.getAttribLocation(game.color_shader_program, "vert_pos_attr");
+        gl.enableVertexAttribArray(game.color_shader_program.vertex_position_attribute);
 
-        game.shader_program.vertexColorAttribute = gl.getAttribLocation(game.shader_program, "vert_col");
-        gl.enableVertexAttribArray(game.shader_program.vertexColorAttribute);
+        game.color_shader_program.vertex_color_attribute = gl.getAttribLocation(game.color_shader_program, "vert_col_attr");
+        gl.enableVertexAttribArray(game.color_shader_program.vertex_color_attribute);
 
-        game.shader_program.perspective_matrixUniform  = gl.getUniformLocation(game.shader_program, "perspective_matrix");
-        game.shader_program.model_view_matrixUniform = gl.getUniformLocation(game.shader_program, "model_view_matrix");
+        game.color_shader_program.perspective_matrix_uniform  = gl.getUniformLocation(game.color_shader_program, "perspective_matrix");
+        game.color_shader_program.model_view_matrix_uniform = gl.getUniformLocation(game.color_shader_program, "model_view_matrix");
+
+
+
+        var texture_fragment_shader = game.get_shader("texture-shader-fs");
+        var texture_vertex_shader   = game.get_shader("texture-shader-vs");
+
+        gl.attachShader(game.texture_shader_program, texture_vertex_shader);
+        gl.attachShader(game.texture_shader_program, texture_fragment_shader);
+        gl.linkProgram(game.texture_shader_program);
+
+        if(! gl.getProgramParameter(game.texture_shader_program, gl.LINK_STATUS)) {
+            alert("Could not initialise texture shader");
+            return;
+        }
+
+        gl.useProgram(game.texture_shader_program);
+
+        game.texture_shader_program.vertex_position_attribute = gl.getAttribLocation(game.texture_shader_program, "vert_pos_attr");
+        gl.enableVertexAttribArray(game.texture_shader_program.vertex_position_attribute);
+
+        game.texture_shader_program.texture_coord_attribute = gl.getAttribLocation(game.texture_shader_program, "texture_coord_attr");
+        gl.enableVertexAttribArray(game.texture_shader_program.texture_coord_attribute);
+
+        game.texture_shader_program.perspective_matrix_uniform  = gl.getUniformLocation(game.texture_shader_program, "perspective_matrix");
+        game.texture_shader_program.model_view_matrix_uniform = gl.getUniformLocation(game.texture_shader_program, "model_view_matrix");
+        game.texture_shader_program.sampler_uniform = gl.getUniformLocation(game.texture_shader_program, "sampler");
     },
 
     generate_asteroid_gl_buffers: function() {
@@ -728,13 +812,13 @@ var game = {
                     ]);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[this.gun_type].pos_buffer);
-                    gl.vertexAttribPointer(game.shader_program.vertexPositionAttribute, m_guns[this.gun_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_guns[this.gun_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[this.gun_type].col_buffer);
-                    gl.vertexAttribPointer(game.shader_program.vertexColorAttribute, m_guns[this.gun_type].col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, m_guns[this.gun_type].col_buffer.itemSize, gl.FLOAT, false, 0, 0);
                     
-                    gl.uniformMatrix4fv(game.shader_program.perspective_matrixUniform, false, game.perspective_matrix);
-                    gl.uniformMatrix4fv(game.shader_program.model_view_matrixUniform, false, game.model_view_matrix);
+                    gl.uniformMatrix4fv(game.color_shader_program.perspective_matrix_uniform, false, game.perspective_matrix);
+                    gl.uniformMatrix4fv(game.color_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
 
                     gl.drawArrays(gl.TRIANGLES, 0, m_guns[this.gun_type].pos_buffer.numItems);
                 game.popMatrix();
@@ -752,53 +836,18 @@ var game = {
 
     create_ninja: function() {
         var id = game.add_user_data({ type: 'ninja' });
-
-        var pos_buffer   = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, pos_buffer);
-
-        var vertices = [];
-        var r = settings.ninja.body.radius;
-        vertices.push(-r, -r, 0);
-        vertices.push( r, -r, 0);
-        vertices.push( r,  r, 0);
-
-        vertices.push(-r, -r, 0);
-        vertices.push(-r,  r, 0);
-        vertices.push( r,  r, 0);
-
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-        pos_buffer.itemSize = 3;
-        pos_buffer.numItems = vertices.length / 3;
-
-
-        var col_buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, col_buffer);
-        var colors = [];
-        for(var i=0; i<vertices.length / 3; ++i) {
-            colors.push(
-                1.0,
-                1.0,
-                1.0,
-                1.0
-            );
-        }
-
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-        col_buffer.itemSize = 4;
-        col_buffer.numItems = colors.length / 4;
-
+        var ninja_type = 0;
 
         game.ninjas[id] = {
             body: null,
             alive: true,
-            stock: settings.ninja.stock,
+            ninja_type: ninja_type,
+            stock: m_ninjas[ninja_type].stock,
             deaths: 0,
             facing_dir: -1,
             gun_angle: 0.0,
             touching_ground: false,
             respawn_counter: 0,
-            pos_buffer: pos_buffer,
-            col_buffer: col_buffer,
             animation: {
 
             },
@@ -812,7 +861,7 @@ var game = {
                 bd.set_bullet(true);
 
                 var circleShape = new Box2D.b2CircleShape();
-                circleShape.set_m_radius(settings.ninja.body.radius);
+                circleShape.set_m_radius(m_ninjas[this.ninja_type].body.radius);
 
                 var filter = new Box2D.b2Filter();
                 filter.set_categoryBits(game.entity_category.ninja);
@@ -820,9 +869,9 @@ var game = {
 
                 var fd = new Box2D.b2FixtureDef();
                 fd.set_shape(circleShape);
-                fd.set_density(settings.ninja.body.density);
-                fd.set_friction(settings.ninja.body.friction);
-                fd.set_restitution(settings.ninja.body.restitution);
+                fd.set_density(m_ninjas[this.ninja_type].body.density);
+                fd.set_friction(m_ninjas[this.ninja_type].body.friction);
+                fd.set_restitution(m_ninjas[this.ninja_type].body.restitution);
                 fd.set_userData(id);
                 fd.set_filter(filter);
 
@@ -845,7 +894,7 @@ var game = {
                 };
 
                 this.jetpack = {
-                    ammo: settings.ninja.jetpack.max_ammo
+                    ammo: m_ninjas[this.ninja_type].jetpack.max_ammo
                 };
             },
 
@@ -853,7 +902,7 @@ var game = {
                 var pos = this.body.GetPosition();
 
                 // draw gun
-                game.pushMatrix();
+                /*game.pushMatrix();
                     mat4.translate(game.model_view_matrix, [
                         pos.get_x(),
                         pos.get_y(),
@@ -862,17 +911,17 @@ var game = {
                     mat4.scale(game.model_view_matrix, [1, this.facing_dir, 1]);
                     mat4.rotate(game.model_view_matrix, this.gun_angle * this.facing_dir, [0, 0, 1]);
 
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.pos_buffer);
-                    gl.vertexAttribPointer(game.shader_program.vertexPositionAttribute, this.pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, m_ninjas[this.ninja_type].pos_buffer);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_ninjas[this.ninja_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
 
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.col_buffer);
-                    gl.vertexAttribPointer(game.shader_program.vertexColorAttribute, this.col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, m_ninjas[this.ninja_type].col_buffer);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, m_ninjas[this.ninja_type].col_buffer.itemSize, gl.FLOAT, false, 0, 0);
                     
-                    gl.uniformMatrix4fv(game.shader_program.perspective_matrixUniform, false, game.perspective_matrix);
-                    gl.uniformMatrix4fv(game.shader_program.model_view_matrixUniform, false, game.model_view_matrix);
+                    gl.uniformMatrix4fv(game.color_shader_program.perspective_matrix_uniform, false, game.perspective_matrix);
+                    gl.uniformMatrix4fv(game.color_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
 
-                    gl.drawArrays(gl.TRIANGLES, 0, this.pos_buffer.numItems);
-                game.popMatrix();
+                    gl.drawArrays(gl.TRIANGLES, 0, m_ninjas[this.ninja_type].pos_buffer.numItems);
+                game.popMatrix();*/
 
                 // draw ninja
                 game.pushMatrix();
@@ -882,16 +931,21 @@ var game = {
                         0.0
                     ]);
 
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.pos_buffer);
-                    gl.vertexAttribPointer(game.shader_program.vertexPositionAttribute, this.pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, m_ninjas[this.ninja_type].pos_buffer);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_ninjas[this.ninja_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
 
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.col_buffer);
-                    gl.vertexAttribPointer(game.shader_program.vertexColorAttribute, this.col_buffer.itemSize, gl.FLOAT, false, 0, 0);
-                    
-                    gl.uniformMatrix4fv(game.shader_program.perspective_matrixUniform, false, game.perspective_matrix);
-                    gl.uniformMatrix4fv(game.shader_program.model_view_matrixUniform, false, game.model_view_matrix);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, m_ninjas[this.ninja_type].texture_buffer);
+                    gl.vertexAttribPointer(game.texture_shader_program.texture_coord_attribute, m_ninjas[this.ninja_type].texture_buffer.itemSize, gl.FLOAT, false, 0, 0);
 
-                    gl.drawArrays(gl.TRIANGLES, 0, this.pos_buffer.numItems);
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, m_ninjas[this.ninja_type].texture);
+                    gl.uniform1i(game.texture_shader_program.sampler_uniform, 0);
+
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m_ninjas[this.ninja_type].vert_index_buffer);
+                    gl.uniformMatrix4fv(game.texture_shader_program.perspective_matrix_uniform, false, game.perspective_matrix);
+                    gl.uniformMatrix4fv(game.texture_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
+
+                    //gl.drawElements(gl.TRIANGLES, 0, m_ninjas[this.ninja_type].vert_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
                 game.popMatrix();
             },
 
@@ -914,7 +968,7 @@ var game = {
                     return;
                 }
 
-                this.damage = Math.min(this.damage, settings.ninja.max_damage);
+                this.damage = Math.min(this.damage, m_ninjas[this.ninja_type].max_damage);
 
                 if(this.gun.fireinterval > 0) {
                     this.gun.fireinterval--;
@@ -924,8 +978,8 @@ var game = {
                     this.gun.reloadtime--;
                 }
 
-                if(this.jetpack.ammo < settings.ninja.jetpack.max_ammo) {
-                    this.jetpack.ammo += settings.ninja.jetpack.reload_rate;
+                if(this.jetpack.ammo < m_ninjas[this.ninja_type].jetpack.max_ammo) {
+                    this.jetpack.ammo += m_ninjas[this.ninja_type].jetpack.reload_rate;
                 }
             },
 
@@ -934,8 +988,8 @@ var game = {
                     return;
                 }
 
-                if(Math.abs(this.body.GetLinearVelocity().get_x()) < settings.ninja.move.max_speed || sign(dir) != sign(this.body.GetLinearVelocity().get_x())) {
-                    this.body.ApplyForceToCenter(new Box2D.b2Vec2(settings.ninja.move.strength * dir, 0.0));
+                if(Math.abs(this.body.GetLinearVelocity().get_x()) < m_ninjas[this.ninja_type].move.max_speed || sign(dir) != sign(this.body.GetLinearVelocity().get_x())) {
+                    this.body.ApplyForceToCenter(new Box2D.b2Vec2(m_ninjas[this.ninja_type].move.strength * dir, 0.0));
                 }
             },
 
@@ -965,8 +1019,8 @@ var game = {
                 }
 
                 game.create_bullet(
-                    this.body.GetPosition().get_x() + (Math.cos(angle) * settings.ninja.body.radius * 2),
-                    this.body.GetPosition().get_y() + (Math.sin(angle) * settings.ninja.body.radius * 2),
+                    this.body.GetPosition().get_x() + (Math.cos(angle) * m_ninjas[this.ninja_type].body.radius * 2),
+                    this.body.GetPosition().get_y() + (Math.sin(angle) * m_ninjas[this.ninja_type].body.radius * 2),
                     this.body.GetLinearVelocity().get_x() + (Math.cos(angle) * strength),
                     this.body.GetLinearVelocity().get_y() + (Math.sin(angle) * strength),
                     this.gun.type
@@ -1010,8 +1064,8 @@ var game = {
                     return;
                 }
 
-                if(this.body.GetLinearVelocity().get_y() < settings.ninja.jetpack.max_speed) {
-                    this.body.ApplyLinearImpulse(new Box2D.b2Vec2(0.0, settings.ninja.jetpack.strength));
+                if(this.body.GetLinearVelocity().get_y() < m_ninjas[this.ninja_type].jetpack.max_speed) {
+                    this.body.ApplyLinearImpulse(new Box2D.b2Vec2(0.0, m_ninjas[this.ninja_type].jetpack.strength));
                     game.create_particle(this.body.GetPosition().get_x(), this.body.GetPosition().get_y(), (-0.5 + Math.random()) / settings.PTM, -0.1 + (-0.5 + Math.random()) / settings.PTM, 0);
                 }
 
@@ -1046,10 +1100,10 @@ var game = {
                 console.log("toss: " + f + " : " + angle);
                 var x = this.body.GetPosition().get_x();
                 var y = this.body.GetPosition().get_y();
-                var force = settings.ninja.toss.force_mult * f;
+                var force = m_ninjas[this.ninja_type].toss.force_mult * f;
                 var crate_type = 1;
-                game.create_crate(x + (Math.cos(angle) * ((settings.ninja.body.radius * 2) + crates[crate_type].width)),
-                    y + (Math.sin(angle) * ((settings.ninja.body.radius * 2)+ crates[crate_type].height)),
+                game.create_crate(x + (Math.cos(angle) * ((m_ninjas[this.ninja_type].body.radius * 2) + crates[crate_type].width)),
+                    y + (Math.sin(angle) * ((m_ninjas[this.ninja_type].body.radius * 2)+ crates[crate_type].height)),
                     this.body.GetLinearVelocity().get_x() + (Math.cos(angle) * force),
                     this.body.GetLinearVelocity().get_y() + (Math.sin(angle) * force),
                     crate_type
@@ -1321,13 +1375,13 @@ var game = {
                     mat4.rotate(game.model_view_matrix, rot, [0, 0, 1]);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_crates[this.crate_type].pos_buffer);
-                    gl.vertexAttribPointer(game.shader_program.vertexPositionAttribute, m_crates[this.crate_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_crates[this.crate_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_crates[this.crate_type].col_buffer);
-                    gl.vertexAttribPointer(game.shader_program.vertexColorAttribute, m_crates[this.crate_type].col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, m_crates[this.crate_type].col_buffer.itemSize, gl.FLOAT, false, 0, 0);
                     
-                    gl.uniformMatrix4fv(game.shader_program.perspective_matrixUniform, false, game.perspective_matrix);
-                    gl.uniformMatrix4fv(game.shader_program.model_view_matrixUniform, false, game.model_view_matrix);
+                    gl.uniformMatrix4fv(game.color_shader_program.perspective_matrix_uniform, false, game.perspective_matrix);
+                    gl.uniformMatrix4fv(game.color_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
 
                     gl.drawArrays(gl.TRIANGLES, 0, m_crates[this.crate_type].pos_buffer.numItems);
                 game.popMatrix();
@@ -1406,7 +1460,7 @@ var game = {
             m.update();
 
             // I was trying to get this damage watcher integrated into bounds_check, but I couldnt figure out how to use the object properly
-            if((! this.bounds_check(m.body)) || (m.damage >= settings.ninja.max_damage)) m.alive = false;
+            if((! this.bounds_check(m.body)) || (m.damage >= m_ninjas[m.ninja_type].max_damage)) m.alive = false;
             
 
             
@@ -1475,14 +1529,14 @@ var game = {
     },
 
     render_asteroids: function() {
-        gl.uniformMatrix4fv(game.shader_program.perspective_matrixUniform, false, game.perspective_matrix);
-        gl.uniformMatrix4fv(game.shader_program.model_view_matrixUniform, false, game.model_view_matrix);
+        gl.uniformMatrix4fv(game.color_shader_program.perspective_matrix_uniform, false, game.perspective_matrix);
+        gl.uniformMatrix4fv(game.color_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, game.asteroid_vert_pos_buffer);
-        gl.vertexAttribPointer(game.shader_program.vertexPositionAttribute, game.asteroid_vert_pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, game.asteroid_vert_pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, game.asteroid_vert_col_buffer);
-        gl.vertexAttribPointer(game.shader_program.vertexColorAttribute, game.asteroid_vert_col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, game.asteroid_vert_col_buffer.itemSize, gl.FLOAT, false, 0, 0);
 
         gl.drawArrays(gl.TRIANGLES, 0, game.asteroid_vert_pos_buffer.numItems);
     },
@@ -1512,12 +1566,15 @@ var game = {
 
 
 
+        gl.useProgram(game.color_shader_program);
         game.render_asteroids();
 
+        gl.useProgram(game.texture_shader_program);
         for(var i in game.ninjas) {
             game.ninjas[i].render();
         }
 
+        gl.useProgram(game.color_shader_program);
         for(var i in game.crates) {
             game.crates[i].render();
         }
@@ -1572,7 +1629,7 @@ var game = {
 
                     ctx.fillText(gun_text, 200, hud_height * 0.8);
 
-                    ctx.fillText("jetpack: " + Math.floor(Math.max(0, game.ninja.n.jetpack.ammo)) + "/" + settings.ninja.jetpack.max_ammo, 700, hud_height * 0.8);
+                    ctx.fillText("jetpack: " + Math.floor(Math.max(0, game.ninja.n.jetpack.ammo)) + "/" + m_ninjas[this.ninja_type].jetpack.max_ammo, 700, hud_height * 0.8);
 
                     if(settings.victoryCondition.stock){
                         ctx.fillText("Stock: " + game.ninja.n.stock, 550, hud_height * 0.8);
