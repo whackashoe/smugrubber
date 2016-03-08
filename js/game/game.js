@@ -98,8 +98,10 @@ var game = {
     model_view_matrix: mat4.create(),
     model_view_matrix_stack: [],
     perspective_matrix: mat4.create(),
-    asteroid_vert_pos_buffer:   gl.createBuffer(),
+    asteroid_vert_pos_buffer: gl.createBuffer(),
     asteroid_vert_col_buffer: gl.createBuffer(),
+    boundary_vert_pos_buffer: gl.createBuffer(),
+    boundary_vert_col_buffer: gl.createBuffer(),
 
     init: function() {
         // setup input system
@@ -364,17 +366,10 @@ var game = {
         }
 
         game.boundary = {
-            left:   bounds.left   - settings.bounds.left,
-            right:  bounds.right  + settings.bounds.right,
-            bottom: bounds.bottom - settings.bounds.bottom,
-            top:    bounds.top    + settings.bounds.top,
-
-            render: function() {
-                ctx.strokeStyle = settings.bounds.color;
-                ctx.lineWidth = settings.bounds.line_w;
-                ctx.rect(this.left, this.top, this.right - this.left, this.bottom - this.top);
-                ctx.stroke();
-            }
+            left:   bounds.left   - settings.boundary.left,
+            right:  bounds.right  + settings.boundary.right,
+            bottom: bounds.bottom - settings.boundary.bottom,
+            top:    bounds.top    + settings.boundary.top,
         };
         
         // load bots
@@ -390,6 +385,7 @@ var game = {
         // setup graphics system
         game.init_shaders();
         game.generate_asteroid_gl_buffers();
+        game.generate_boundary_gl_buffers();
         game.generate_crates_gl_buffers();
         game.generate_guns_gl_buffers();
         game.generate_ninjas_gl_buffers();
@@ -598,8 +594,6 @@ var game = {
             return;
         }
 
-        gl.useProgram(game.color_shader_program);
-
         game.color_shader_program.vertex_position_attribute = gl.getAttribLocation(game.color_shader_program, "vert_pos_attr");
         gl.enableVertexAttribArray(game.color_shader_program.vertex_position_attribute);
 
@@ -622,8 +616,6 @@ var game = {
             alert("Could not initialise texture shader");
             return;
         }
-
-        gl.useProgram(game.texture_shader_program);
 
         game.texture_shader_program.vertex_position_attribute = gl.getAttribLocation(game.texture_shader_program, "vert_pos_attr");
         gl.enableVertexAttribArray(game.texture_shader_program.vertex_position_attribute);
@@ -709,6 +701,64 @@ var game = {
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
         game.asteroid_vert_col_buffer.itemSize = 4;
         game.asteroid_vert_col_buffer.numItems = colors.length / 4;
+    },
+
+    generate_boundary_gl_buffers: function() {
+        var w = settings.boundary.line_w;
+        gl.bindBuffer(gl.ARRAY_BUFFER, game.boundary_vert_pos_buffer);
+
+        var vertices = [];
+        vertices.push(game.boundary.left,  game.boundary.top,      0.0);
+        vertices.push(game.boundary.left,  game.boundary.top + w,  0.0);
+        vertices.push(game.boundary.right, game.boundary.top,      0.0);
+
+        vertices.push(game.boundary.right,  game.boundary.top,     0.0);
+        vertices.push(game.boundary.right,  game.boundary.top + w, 0.0);
+        vertices.push(game.boundary.left,   game.boundary.top + w, 0.0);
+
+        vertices.push(game.boundary.left,  game.boundary.bottom,      0.0);
+        vertices.push(game.boundary.left,  game.boundary.bottom - w,  0.0);
+        vertices.push(game.boundary.right, game.boundary.bottom,      0.0);
+
+        vertices.push(game.boundary.right,  game.boundary.bottom,     0.0);
+        vertices.push(game.boundary.right,  game.boundary.bottom - w, 0.0);
+        vertices.push(game.boundary.left,   game.boundary.bottom - w, 0.0);
+
+        vertices.push(game.boundary.left,     game.boundary.top,    0.0);
+        vertices.push(game.boundary.left + w, game.boundary.top,    0.0);
+        vertices.push(game.boundary.left,     game.boundary.bottom, 0.0);
+
+        vertices.push(game.boundary.left + w, game.boundary.top,     0.0);
+        vertices.push(game.boundary.left,     game.boundary.bottom , 0.0);
+        vertices.push(game.boundary.left + w, game.boundary.bottom,  0.0);
+
+        vertices.push(game.boundary.right,     game.boundary.top,    0.0);
+        vertices.push(game.boundary.right - w, game.boundary.top,    0.0);
+        vertices.push(game.boundary.right,     game.boundary.bottom, 0.0);
+
+        vertices.push(game.boundary.right - w, game.boundary.top,     0.0);
+        vertices.push(game.boundary.right,     game.boundary.bottom , 0.0);
+        vertices.push(game.boundary.right - w, game.boundary.bottom,  0.0);
+
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+        game.boundary_vert_pos_buffer.itemSize = 3;
+        game.boundary_vert_pos_buffer.numItems = vertices.length / 3;
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, game.boundary_vert_col_buffer);
+
+        var colors = [];
+        for(var i=0; i<vertices.length; ++i) {
+            colors.push(
+                settings.colors.boundary.r / 255.0,
+                settings.colors.boundary.g / 255.0,
+                settings.colors.boundary.b / 255.0,
+                1.0
+            );
+        }
+
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+        game.boundary_vert_col_buffer.itemSize = 4;
+        game.boundary_vert_col_buffer.numItems = colors.length / 4;
     },
 
     add_user_data: function(data) {
@@ -930,6 +980,8 @@ var game = {
                         pos.get_y(),
                         0.0
                     ]);
+
+                    mat4.scale(game.model_view_matrix, [this.facing_dir, 1, 1]);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_ninjas[this.ninja_type].pos_buffer);
                     gl.vertexAttribPointer(game.texture_shader_program.vertex_position_attribute, m_ninjas[this.ninja_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -1541,6 +1593,20 @@ var game = {
         gl.drawArrays(gl.TRIANGLES, 0, game.asteroid_vert_pos_buffer.numItems);
     },
 
+    render_boundary: function() {
+        gl.uniformMatrix4fv(game.color_shader_program.perspective_matrix_uniform, false, game.perspective_matrix);
+        gl.uniformMatrix4fv(game.color_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, game.boundary_vert_pos_buffer);
+        gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, game.boundary_vert_pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, game.boundary_vert_col_buffer);
+        gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, game.boundary_vert_col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.drawArrays(gl.TRIANGLES, 0, game.boundary_vert_pos_buffer.numItems);
+    },
+    
+
     render: function() {
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -1565,14 +1631,25 @@ var game = {
         }
 
 
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+
+        gl.disable(gl.BLEND);
+        gl.enable(gl.DEPTH_TEST);
 
         gl.useProgram(game.color_shader_program);
         game.render_asteroids();
+        game.render_boundary();
+
+        gl.enable(gl.BLEND);
+        gl.disable(gl.DEPTH_TEST);
 
         gl.useProgram(game.texture_shader_program);
         for(var i in game.ninjas) {
             game.ninjas[i].render();
         }
+
+        gl.disable(gl.BLEND);
+        gl.enable(gl.DEPTH_TEST);
 
         gl.useProgram(game.color_shader_program);
         for(var i in game.crates) {
@@ -1582,6 +1659,7 @@ var game = {
         for(var i in game.bullets) {
             game.bullets[i].render();
         }
+
 
 
         /*

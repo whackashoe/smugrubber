@@ -3,12 +3,11 @@ var settings = {
         stock: false, // Game restarts after lives from settings.ninja.stock are gone
         lastMan: false, // Each death adds respawn time, ends the second  only one player is left alive
     },
-    bounds: {
-        top:    125,
-        bottom: 100,
-        left:   300,
-        right:  300,
-        color:  'rgb(255, 0, 0)',
+    boundary: {
+        top:    25,
+        bottom: 10,
+        left:   30,
+        right:  30,
         line_w:  1
     },
     controls: {
@@ -29,6 +28,11 @@ var settings = {
             r: 88,
             g: 53,
             b: 53
+        },
+        boundary: {
+            r: 255,
+            g: 0,
+            b: 0
         }
     },
     crates: {
