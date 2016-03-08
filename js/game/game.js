@@ -388,6 +388,7 @@ var game = {
         game.generate_boundary_gl_buffers();
         game.generate_crates_gl_buffers();
         game.generate_guns_gl_buffers();
+        game.generate_particles_gl_buffers();
         game.generate_ninjas_gl_buffers();
 
         gl.clearColor(
@@ -474,6 +475,45 @@ var game = {
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
             m_guns[i].col_buffer.itemSize = 4;
             m_guns[i].col_buffer.numItems = colors.length / 4;
+        }
+    },
+    
+    generate_particles_gl_buffers: function(){
+        for(var i=0; i<m_particles.length; ++i) {
+            var r = m_guns[i].radius;
+
+            m_particles[i].pos_buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, m_particles[i].pos_buffer);
+
+            var vertices = [];
+            var quality = 10;
+            for(var j=0; j<quality; ++j) {
+                vertices.push(0, 0, 0);
+                var a1 = (Math.PI * 2) / quality * j;
+                var a2 = (Math.PI * 2) / quality * ((j + 1) % quality);
+                vertices.push(Math.cos(a1) * r, Math.sin(a1) * r, 0);
+                vertices.push(Math.cos(a2) * r, Math.sin(a2) * r, 0);
+            }
+
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+            m_particles[i].pos_buffer.itemSize = 3;
+            m_particles[i].pos_buffer.numItems = vertices.length / 3;
+
+            m_particles[i].col_buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, m_particles[i].col_buffer);
+            var colors = [];
+            for(var j=0; j<vertices.length / 3; ++j) {
+                colors.push(
+                    m_particles[i].color.r / 255.0,
+                    m_particles[i].color.g / 255.0,
+                    m_particles[i].color.b / 255.0,
+                    1.0
+                );
+            }
+
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+            m_particles[i].col_buffer.itemSize = 4;
+            m_particles[i].col_buffer.numItems = colors.length / 4;
         }
     },
 
@@ -803,14 +843,7 @@ var game = {
 
         game.spawnpoints[id] = {
             x: x,
-            y: y,
-            render: function() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, settings.spawnpoint.radius, 0, 2*Math.PI);
-                ctx.strokeStyle = settings.spawnpoint.color;
-                ctx.stroke();
-                ctx.closePath();
-            }
+            y: y
         };
         
         return id;
@@ -1118,7 +1151,7 @@ var game = {
 
                 if(this.body.GetLinearVelocity().get_y() < m_ninjas[this.ninja_type].jetpack.max_speed) {
                     this.body.ApplyLinearImpulse(new Box2D.b2Vec2(0.0, m_ninjas[this.ninja_type].jetpack.strength));
-                    game.create_particle(this.body.GetPosition().get_x(), this.body.GetPosition().get_y(), (-0.5 + Math.random()) / settings.PTM, -0.1 + (-0.5 + Math.random()) / settings.PTM, 0);
+                    game.create_particle(this.body.GetPosition().get_x(), this.body.GetPosition().get_y(), (-0.5 + Math.random()) * 0.04 , -0.1 + (-0.5 + Math.random()) * 0.04, 0);
                 }
 
                 this.jetpack.ammo--;
@@ -1448,6 +1481,11 @@ var game = {
     },
 
     create_particle: function(x, y, px, py, particle_type) {
+        if(game.camninja != null) {
+            if(dist(game.camninja.body.GetPosition().get_x() , game.camninja.body.GetPosition().get_y(), x, y) > 30) {
+                return;
+            }
+        }
         var id = game.add_user_data({ type: 'particle' });
         
         game.particles[id] = {
@@ -1466,11 +1504,24 @@ var game = {
             },
 
             render: function() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, particles[this.type].radius, 0, 2*Math.PI);
-                ctx.fillStyle = particles[this.type].color,
-                ctx.fill();
-                ctx.closePath();
+                game.pushMatrix();
+                    mat4.translate(game.model_view_matrix, [
+                        this.x,
+                        this.y,
+                        1.0
+                    ]);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, m_particles[this.type].pos_buffer);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_particles[this.type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, m_particles[this.type].col_buffer);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, m_particles[this.type].col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    
+                    gl.uniformMatrix4fv(game.color_shader_program.perspective_matrix_uniform, false, game.perspective_matrix);
+                    gl.uniformMatrix4fv(game.color_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
+
+                    gl.drawArrays(gl.TRIANGLES, 0, m_particles[this.type].pos_buffer.numItems);
+                game.popMatrix();
             }
         };
     },
@@ -1660,24 +1711,11 @@ var game = {
             game.bullets[i].render();
         }
 
-
+        for(var i in game.particles) {
+            game.particles[i].render();
+        }
 
         /*
-        ctx.save();            
-            ctx.translate(game.game_offset.x + canvas.width/2 - game.mousex, game.game_offset.y + canvas.height / 2 - game.mousey);
-            ctx.scale(1, -1);                
-            ctx.scale(settings.PTM, settings.PTM);
-
-            // disabled 
-            //for(var i in game.spawnpoints) {
-            //    game.spawnpoints[i].render();
-            //}
-
-            for(var i in game.particles) {
-                game.particles[i].render();
-            }
-
-            game.boundary.render();
 
 
         ctx.restore();

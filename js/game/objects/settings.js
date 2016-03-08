@@ -4,10 +4,10 @@ var settings = {
         lastMan: false, // Each death adds respawn time, ends the second  only one player is left alive
     },
     boundary: {
-        top:    25,
-        bottom: 10,
-        left:   30,
-        right:  30,
+        top:    125,
+        bottom: 20,
+        left:   60,
+        right:  60,
         line_w:  1
     },
     controls: {
@@ -70,7 +70,7 @@ var settings = {
         place_y_offset: -60
     },
     bots: {
-        amount: 10,
+        amount: 20,
         target: "you", //either all or you
         target_switch_nsec: 5,
         jump_nsec: 5,
