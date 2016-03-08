@@ -492,16 +492,16 @@ var game = {
         vertices.push(-r, -r, 0);
         vertices.push( r, -r, 0);
         vertices.push( r,  r, 0);
-
-        vertices.push(-r, -r, 0);
         vertices.push(-r,  r, 0);
-        vertices.push( r,  r, 0);
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
         m.pos_buffer.itemSize = 3;
         m.pos_buffer.numItems = vertices.length / 3;
 
         m.texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, m.texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 0, 0, 255]));
+
         m.texture.image = new Image();
         m.texture.image.onload = function() {
             gl.bindTexture(gl.TEXTURE_2D, m.texture);
@@ -932,7 +932,7 @@ var game = {
                     ]);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_ninjas[this.ninja_type].pos_buffer);
-                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_ninjas[this.ninja_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.vertexAttribPointer(game.texture_shader_program.vertex_position_attribute, m_ninjas[this.ninja_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_ninjas[this.ninja_type].texture_buffer);
                     gl.vertexAttribPointer(game.texture_shader_program.texture_coord_attribute, m_ninjas[this.ninja_type].texture_buffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -945,7 +945,7 @@ var game = {
                     gl.uniformMatrix4fv(game.texture_shader_program.perspective_matrix_uniform, false, game.perspective_matrix);
                     gl.uniformMatrix4fv(game.texture_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
 
-                    //gl.drawElements(gl.TRIANGLES, 0, m_ninjas[this.ninja_type].vert_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
+                    gl.drawElements(gl.TRIANGLES, m_ninjas[this.ninja_type].vert_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
                 game.popMatrix();
             },
 
