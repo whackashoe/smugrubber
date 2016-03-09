@@ -417,8 +417,8 @@ var game = {
             vertices.push( w,  h, 0);
 
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-            m_crates[i].pos_buffer.itemSize = 3;
-            m_crates[i].pos_buffer.numItems = vertices.length / 3;
+            m_crates[i].pos_buffer.item_size = 3;
+            m_crates[i].pos_buffer.num_items = vertices.length / 3;
 
             m_crates[i].col_buffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, m_crates[i].col_buffer);
@@ -433,8 +433,8 @@ var game = {
             }
 
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-            m_crates[i].col_buffer.itemSize = 4;
-            m_crates[i].col_buffer.numItems = colors.length / 4;
+            m_crates[i].col_buffer.item_size = 4;
+            m_crates[i].col_buffer.num_items = colors.length / 4;
 
         }
     },
@@ -443,8 +443,8 @@ var game = {
         for(var i=0; i<m_guns.length; ++i) {
             var r = m_guns[i].radius;
 
-            m_guns[i].pos_buffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[i].pos_buffer);
+            m_guns[i].bullet_pos_buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[i].bullet_pos_buffer);
 
             var vertices = [];
             var quality = 10;
@@ -457,11 +457,11 @@ var game = {
             }
 
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-            m_guns[i].pos_buffer.itemSize = 3;
-            m_guns[i].pos_buffer.numItems = vertices.length / 3;
+            m_guns[i].bullet_pos_buffer.item_size = 3;
+            m_guns[i].bullet_pos_buffer.num_items = vertices.length / 3;
 
-            m_guns[i].col_buffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[i].col_buffer);
+            m_guns[i].bullet_col_buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[i].bullet_col_buffer);
             var colors = [];
             for(var j=0; j<vertices.length / 3; ++j) {
                 colors.push(
@@ -473,8 +473,8 @@ var game = {
             }
 
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-            m_guns[i].col_buffer.itemSize = 4;
-            m_guns[i].col_buffer.numItems = colors.length / 4;
+            m_guns[i].bullet_col_buffer.item_size = 4;
+            m_guns[i].bullet_col_buffer.num_items = colors.length / 4;
         }
     },
     
@@ -496,8 +496,8 @@ var game = {
             }
 
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-            m_particles[i].pos_buffer.itemSize = 3;
-            m_particles[i].pos_buffer.numItems = vertices.length / 3;
+            m_particles[i].pos_buffer.item_size = 3;
+            m_particles[i].pos_buffer.num_items = vertices.length / 3;
 
             m_particles[i].col_buffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, m_particles[i].col_buffer);
@@ -512,8 +512,8 @@ var game = {
             }
 
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-            m_particles[i].col_buffer.itemSize = 4;
-            m_particles[i].col_buffer.numItems = colors.length / 4;
+            m_particles[i].col_buffer.item_size = 4;
+            m_particles[i].col_buffer.num_items = colors.length / 4;
         }
     },
 
@@ -531,8 +531,8 @@ var game = {
         vertices.push(-r,  r, 0);
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-        m.pos_buffer.itemSize = 3;
-        m.pos_buffer.numItems = vertices.length / 3;
+        m.pos_buffer.item_size = 3;
+        m.pos_buffer.num_items = vertices.length / 3;
 
         m.texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, m.texture);
@@ -561,15 +561,15 @@ var game = {
         ];
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tcoords), gl.STATIC_DRAW);
-        m.texture_buffer.itemSize = 2;
-        m.texture_buffer.numItems = tcoords.length / 2;
+        m.texture_buffer.item_size = 2;
+        m.texture_buffer.num_items = tcoords.length / 2;
 
         m.vert_index_buffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.vert_index_buffer);
         var vert_indexs = [0, 1, 2,     0, 2, 3];
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(vert_indexs), gl.STATIC_DRAW);
-        m.vert_index_buffer.itemSize = 1;
-        m.vert_index_buffer.numItems = vert_indexs.length;
+        m.vert_index_buffer.item_size = 1;
+        m.vert_index_buffer.num_items = vert_indexs.length;
     },
 
     pushMatrix: function() {
@@ -688,8 +688,8 @@ var game = {
         }
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-        game.asteroid_vert_pos_buffer.itemSize = 3;
-        game.asteroid_vert_pos_buffer.numItems = vertices.length / 3;
+        game.asteroid_vert_pos_buffer.item_size = 3;
+        game.asteroid_vert_pos_buffer.num_items = vertices.length / 3;
 
         gl.bindBuffer(gl.ARRAY_BUFFER, game.asteroid_vert_col_buffer);
 
@@ -739,8 +739,8 @@ var game = {
         }
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-        game.asteroid_vert_col_buffer.itemSize = 4;
-        game.asteroid_vert_col_buffer.numItems = colors.length / 4;
+        game.asteroid_vert_col_buffer.item_size = 4;
+        game.asteroid_vert_col_buffer.num_items = colors.length / 4;
     },
 
     generate_boundary_gl_buffers: function() {
@@ -781,8 +781,8 @@ var game = {
         vertices.push(game.boundary.right - w, game.boundary.bottom,  0.0);
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-        game.boundary_vert_pos_buffer.itemSize = 3;
-        game.boundary_vert_pos_buffer.numItems = vertices.length / 3;
+        game.boundary_vert_pos_buffer.item_size = 3;
+        game.boundary_vert_pos_buffer.num_items = vertices.length / 3;
 
         gl.bindBuffer(gl.ARRAY_BUFFER, game.boundary_vert_col_buffer);
 
@@ -797,8 +797,8 @@ var game = {
         }
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-        game.boundary_vert_col_buffer.itemSize = 4;
-        game.boundary_vert_col_buffer.numItems = colors.length / 4;
+        game.boundary_vert_col_buffer.item_size = 4;
+        game.boundary_vert_col_buffer.num_items = colors.length / 4;
     },
 
     add_user_data: function(data) {
@@ -894,16 +894,16 @@ var game = {
                         0.0
                     ]);
 
-                    gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[this.gun_type].pos_buffer);
-                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_guns[this.gun_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[this.gun_type].bullet_pos_buffer);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_guns[this.gun_type].bullet_pos_buffer.item_size, gl.FLOAT, false, 0, 0);
 
-                    gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[this.gun_type].col_buffer);
-                    gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, m_guns[this.gun_type].col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, m_guns[this.gun_type].bullet_col_buffer);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, m_guns[this.gun_type].bullet_col_buffer.item_size, gl.FLOAT, false, 0, 0);
                     
                     gl.uniformMatrix4fv(game.color_shader_program.perspective_matrix_uniform, false, game.perspective_matrix);
                     gl.uniformMatrix4fv(game.color_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
 
-                    gl.drawArrays(gl.TRIANGLES, 0, m_guns[this.gun_type].pos_buffer.numItems);
+                    gl.drawArrays(gl.TRIANGLES, 0, m_guns[this.gun_type].bullet_pos_buffer.num_items);
                 game.popMatrix();
             },
 
@@ -995,15 +995,15 @@ var game = {
                     mat4.rotate(game.model_view_matrix, this.gun_angle * this.facing_dir, [0, 0, 1]);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_ninjas[this.ninja_type].pos_buffer);
-                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_ninjas[this.ninja_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_ninjas[this.ninja_type].pos_buffer.item_size, gl.FLOAT, false, 0, 0);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_ninjas[this.ninja_type].col_buffer);
-                    gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, m_ninjas[this.ninja_type].col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, m_ninjas[this.ninja_type].col_buffer.item_size, gl.FLOAT, false, 0, 0);
                     
                     gl.uniformMatrix4fv(game.color_shader_program.perspective_matrix_uniform, false, game.perspective_matrix);
                     gl.uniformMatrix4fv(game.color_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
 
-                    gl.drawArrays(gl.TRIANGLES, 0, m_ninjas[this.ninja_type].pos_buffer.numItems);
+                    gl.drawArrays(gl.TRIANGLES, 0, m_ninjas[this.ninja_type].pos_buffer.num_items);
                 game.popMatrix();*/
 
                 // draw ninja
@@ -1017,10 +1017,10 @@ var game = {
                     mat4.scale(game.model_view_matrix, [this.facing_dir, 1, 1]);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_ninjas[this.ninja_type].pos_buffer);
-                    gl.vertexAttribPointer(game.texture_shader_program.vertex_position_attribute, m_ninjas[this.ninja_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.vertexAttribPointer(game.texture_shader_program.vertex_position_attribute, m_ninjas[this.ninja_type].pos_buffer.item_size, gl.FLOAT, false, 0, 0);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_ninjas[this.ninja_type].texture_buffer);
-                    gl.vertexAttribPointer(game.texture_shader_program.texture_coord_attribute, m_ninjas[this.ninja_type].texture_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.vertexAttribPointer(game.texture_shader_program.texture_coord_attribute, m_ninjas[this.ninja_type].texture_buffer.item_size, gl.FLOAT, false, 0, 0);
 
                     gl.activeTexture(gl.TEXTURE0);
                     gl.bindTexture(gl.TEXTURE_2D, m_ninjas[this.ninja_type].texture);
@@ -1030,7 +1030,7 @@ var game = {
                     gl.uniformMatrix4fv(game.texture_shader_program.perspective_matrix_uniform, false, game.perspective_matrix);
                     gl.uniformMatrix4fv(game.texture_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
 
-                    gl.drawElements(gl.TRIANGLES, m_ninjas[this.ninja_type].vert_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
+                    gl.drawElements(gl.TRIANGLES, m_ninjas[this.ninja_type].vert_index_buffer.num_items, gl.UNSIGNED_SHORT, 0);
                 game.popMatrix();
             },
 
@@ -1460,15 +1460,15 @@ var game = {
                     mat4.rotate(game.model_view_matrix, rot, [0, 0, 1]);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_crates[this.crate_type].pos_buffer);
-                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_crates[this.crate_type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_crates[this.crate_type].pos_buffer.item_size, gl.FLOAT, false, 0, 0);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_crates[this.crate_type].col_buffer);
-                    gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, m_crates[this.crate_type].col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, m_crates[this.crate_type].col_buffer.item_size, gl.FLOAT, false, 0, 0);
                     
                     gl.uniformMatrix4fv(game.color_shader_program.perspective_matrix_uniform, false, game.perspective_matrix);
                     gl.uniformMatrix4fv(game.color_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
 
-                    gl.drawArrays(gl.TRIANGLES, 0, m_crates[this.crate_type].pos_buffer.numItems);
+                    gl.drawArrays(gl.TRIANGLES, 0, m_crates[this.crate_type].pos_buffer.num_items);
                 game.popMatrix();
             },
 
@@ -1512,15 +1512,15 @@ var game = {
                     ]);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_particles[this.type].pos_buffer);
-                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_particles[this.type].pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, m_particles[this.type].pos_buffer.item_size, gl.FLOAT, false, 0, 0);
 
                     gl.bindBuffer(gl.ARRAY_BUFFER, m_particles[this.type].col_buffer);
-                    gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, m_particles[this.type].col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+                    gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, m_particles[this.type].col_buffer.item_size, gl.FLOAT, false, 0, 0);
                     
                     gl.uniformMatrix4fv(game.color_shader_program.perspective_matrix_uniform, false, game.perspective_matrix);
                     gl.uniformMatrix4fv(game.color_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
 
-                    gl.drawArrays(gl.TRIANGLES, 0, m_particles[this.type].pos_buffer.numItems);
+                    gl.drawArrays(gl.TRIANGLES, 0, m_particles[this.type].pos_buffer.num_items);
                 game.popMatrix();
             }
         };
@@ -1636,12 +1636,12 @@ var game = {
         gl.uniformMatrix4fv(game.color_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, game.asteroid_vert_pos_buffer);
-        gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, game.asteroid_vert_pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, game.asteroid_vert_pos_buffer.item_size, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, game.asteroid_vert_col_buffer);
-        gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, game.asteroid_vert_col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, game.asteroid_vert_col_buffer.item_size, gl.FLOAT, false, 0, 0);
 
-        gl.drawArrays(gl.TRIANGLES, 0, game.asteroid_vert_pos_buffer.numItems);
+        gl.drawArrays(gl.TRIANGLES, 0, game.asteroid_vert_pos_buffer.num_items);
     },
 
     render_boundary: function() {
@@ -1649,12 +1649,12 @@ var game = {
         gl.uniformMatrix4fv(game.color_shader_program.model_view_matrix_uniform, false, game.model_view_matrix);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, game.boundary_vert_pos_buffer);
-        gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, game.boundary_vert_pos_buffer.itemSize, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(game.color_shader_program.vertex_position_attribute, game.boundary_vert_pos_buffer.item_size, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, game.boundary_vert_col_buffer);
-        gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, game.boundary_vert_col_buffer.itemSize, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(game.color_shader_program.vertex_color_attribute, game.boundary_vert_col_buffer.item_size, gl.FLOAT, false, 0, 0);
 
-        gl.drawArrays(gl.TRIANGLES, 0, game.boundary_vert_pos_buffer.numItems);
+        gl.drawArrays(gl.TRIANGLES, 0, game.boundary_vert_pos_buffer.num_items);
     },
     
 
